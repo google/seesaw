@@ -1,0 +1,18 @@
+[cluster]
+anycast_enabled = false
+name = au-syd
+node_ipv4 = 192.168.10.2
+node_ipv6 = 2015:cafe::2
+peer_ipv4 = 192.168.10.3
+peer_ipv6 = 2015:cafe::3
+vip_ipv4 = 192.168.10.1
+vip_ipv6 = 2015:cafe::1
+
+[config_server]
+primary = https://seesaw-config1.example.com/
+secondary = https://seesaw-config2.example.com/
+tertiary = https://seesaw-config3.example.com/
+
+[interface]
+node = eth0
+lb = eth1

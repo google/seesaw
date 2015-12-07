@@ -1,0 +1,420 @@
+seesaw_vip: <
+  fqdn: "seesaw-vip1.example.com."
+  ipv4: "192.168.10.1/24"
+  ipv6: "2015:cafe::1/64"
+  status: PRODUCTION
+>
+node: <
+  fqdn: "seesaw1-1.example.com."
+  ipv4: "192.168.10.2/24"
+  ipv6: "2015:cafe::2/64"
+  status: PRODUCTION
+>
+node: <
+  fqdn: "seesaw1-2.example.com."
+  ipv4: "192.168.10.3/24"
+  ipv6: "2015:cafe::3/64"
+  status: PRODUCTION
+>
+bgp_remote_asn: 64513
+bgp_peer: <
+  fqdn: "au-syd-router1.example.com."
+  ipv4: "192.168.10.253/24"
+  ipv6: "2015:cafe::fe/64"
+>
+bgp_peer: <
+  fqdn: "au-syd-router2.example.com."
+  ipv4: "192.168.10.254/24"
+  ipv6: "2015:cafe::ff/64"
+>
+vserver: <
+  name: "radius.server@au-syd"
+  entry_address: <
+    fqdn: "radius-anycast.example.com."
+    ipv4: "192.168.255.10/24"
+    status: PRODUCTION
+  >
+  rp: "radius-team@example.com"
+  vserver_entry: <
+    protocol: UDP
+    port: 1812
+    scheduler: WRR
+    persistence: 120
+    healthcheck: <
+      type: RADIUS
+      interval: 3
+      timeout: 2
+      port: 1812
+      send: "radius-monitor:ignored:random"
+      receive: "accept"
+      mode: DSR
+      retries: 1
+    >
+  >
+  backend: <
+    host: <
+      fqdn: "radius1-1.example.com."
+      ipv4: "192.168.11.1/24"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  backend: <
+    host: <
+      fqdn: "radius1-2.example.com."
+      ipv4: "192.168.11.1/24"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  healthcheck: <
+    type: HTTP
+    interval: 4
+    timeout: 1
+    port: 11000
+    send: "/healthz"
+    tls_verify: false
+  >
+  access_grant: <
+    grantee: "radius-oncall"
+    role: OPS
+    type: GROUP
+  >
+  access_grant: <
+    grantee: "radius-admin"
+    role: ADMIN
+    type: GROUP
+  >
+>
+vserver: <
+  name: "dns.resolver@au-syd"
+  entry_address: <
+    fqdn: "dns-anycast.example.com."
+    ipv4: "192.168.255.1/24"
+    status: PRODUCTION
+  >
+  rp: "corpdns-team@example.com"
+  vserver_entry: <
+    protocol: TCP
+    port: 53
+    scheduler: RR
+    server_low_watermark: 0.3
+    healthcheck: <
+      type: DNS
+      interval: 5
+      timeout: 2
+      port: 53
+      send: "www.example.com"
+      receive: "192.168.0.1"
+      mode: DSR
+      method: "a"
+      retries: 1
+    >
+  >
+  vserver_entry: <
+    protocol: UDP
+    port: 53
+    scheduler: RR
+    server_low_watermark: 0.3
+    healthcheck: <
+      type: DNS
+      interval: 5
+      timeout: 2
+      port: 53
+      send: "www.example.com"
+      receive: "192.168.0.1"
+      mode: DSR
+      method: "a"
+      retries: 1
+    >
+  >
+  backend: <
+    host: <
+      fqdn: "dns1-1.example.com."
+      ipv4: "192.168.12.1/24"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  backend: <
+    host: <
+      fqdn: "dns1-2.example.com."
+      ipv4: "192.168.12.2/24"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  backend: <
+    host: <
+      fqdn: "dns1-3.example.com."
+      ipv4: "192.168.12.3/24"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  backend: <
+    host: <
+      fqdn: "dns1-4.example.com."
+      ipv4: "192.168.12.4/24"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  healthcheck: <
+    type: HTTP
+    interval: 2
+    timeout: 1
+    port: 11000
+    send: "/healthz"
+    tls_verify: false
+  >
+  access_grant: <
+    grantee: "dns-oncall"
+    role: OPS
+    type: GROUP
+  >
+  access_grant: <
+    grantee: "dns-admin"
+    role: ADMIN
+    type: GROUP
+  >
+>
+vserver: <
+  name: "syslog.server@au-syd"
+  entry_address: <
+    fqdn: "syslog-anycast.example.com."
+    ipv4: "192.168.255.4/24"
+    status: PRODUCTION
+  >
+  rp: "syslog-team@example.com"
+  vserver_entry: <
+    protocol: TCP
+    port: 514
+    scheduler: WRR
+    server_low_watermark: 0.3
+  >
+  vserver_entry: <
+    protocol: UDP
+    port: 514
+    scheduler: WRR
+    server_low_watermark: 0.3
+  >
+  backend: <
+    host: <
+      fqdn: "syslog1-1.example.com."
+      ipv4: "192.168.13.11/24"
+      ipv6: "2015:cafe:13::11/64"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  backend: <
+    host: <
+      fqdn: "syslog1-2.example.com."
+      ipv4: "192.168.13.12/24"
+      ipv6: "2015:cafe:13::12/64"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  healthcheck: <
+    type: TCP
+    port: 514
+    mode: DSR
+    tls_verify: false
+  >
+  healthcheck: <
+    type: HTTP
+    port: 11000
+    send: "/healthz"
+    tls_verify: false
+  >
+  access_grant: <
+    grantee: "syslog-oncall"
+    role: OPS
+    type: GROUP
+  >
+  access_grant: <
+    grantee: "syslog-admin"
+    role: ADMIN
+    type: GROUP
+  >
+>
+vserver: <
+  name: "http.proxy@au-syd"
+  entry_address: <
+    fqdn: "http-proxy-anycast.example.com."
+    ipv4: "192.168.255.17/24"
+    status: PRODUCTION
+  >
+  rp: "http-proxy-team@example.com"
+  vserver_entry: <
+    protocol: TCP
+    port: 3128
+    scheduler: RR
+    healthcheck: <
+      type: HTTP
+      port: 3128
+      send: "http://localhost/status.html"
+      receive: "OK"
+      mode: DSR
+      proxy: true
+      tls_verify: false
+    >
+  >
+  backend: <
+    host: <
+      fqdn: "proxy1-1.example.com."
+      ipv4: "192.168.14.11/24"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  backend: <
+    host: <
+      fqdn: "proxy1-2.example.com."
+      ipv4: "192.168.14.12/24"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  access_grant: <
+    grantee: "proxy-admin"
+    role: ADMIN
+    type: GROUP
+  >
+>
+vserver: <
+  name: "windows.ad.dc@au-syd"
+  entry_address: <
+    fqdn: "ad-ds-anycast.example.com."
+    ipv4: "192.168.255.20/24"
+    status: PRODUCTION
+  >
+  rp: "windows-team@example.com"
+  vserver_entry: <
+    protocol: TCP
+    port: 53
+    scheduler: WRR
+    healthcheck: <
+      type: DNS
+      port: 53
+      send: "ad-ds-anycast.example.com"
+      receive: "192.168.255.20"
+      method: "a"
+    >
+  >
+  vserver_entry: <
+    protocol: TCP
+    port: 88
+    scheduler: WRR
+    persistence: 3600
+    healthcheck: <
+      type: TCP
+      port: 88
+      tls_verify: false
+    >
+  >
+  vserver_entry: <
+    protocol: TCP
+    port: 636
+    scheduler: WRR
+    persistence: 3600
+    healthcheck: <
+      type: TCP
+      port: 636
+      tls_verify: false
+    >
+  >
+  vserver_entry: <
+    protocol: UDP
+    port: 53
+    scheduler: WRR
+    healthcheck: <
+      type: DNS
+      port: 53
+      send: "ad-ds-anycast.example.com"
+      receive: "192.168.255.20"
+      method: "a"
+    >
+  >
+  vserver_entry: <
+    protocol: UDP
+    port: 88
+    scheduler: WRR
+    persistence: 3600
+    healthcheck: <
+      type: TCP
+      port: 88
+      tls_verify: false
+    >
+  >
+  backend: <
+    host: <
+      fqdn: "win-dc-1.example.com."
+      ipv4: "192.168.15.1/26"
+      ipv6: "2015:cafe:15::1/64"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  backend: <
+    host: <
+      fqdn: "win-dc-2.example.com."
+      ipv4: "192.168.15.2/26"
+      ipv6: "2015:cafe:15::2/64"
+      status: PRODUCTION
+    >
+    weight: 1
+  >
+  access_grant: <
+    grantee: "windows-admin"
+    role: ADMIN
+    type: GROUP
+  >
+>
+vlan: <
+  vlan_id: 511
+  host: <
+    fqdn: "seesaw1-vlan511.example.com."
+    ipv4: "192.168.11.252/24"
+    ipv6: "2015:cafe:11::ff01/64"
+  >
+>
+vlan: <
+  vlan_id: 512
+  host: <
+    fqdn: "seesaw1-vlan512.example.com."
+    ipv4: "192.168.12.252/24"
+    ipv6: "2015:cafe:12::ff01/64"
+  >
+>
+vlan: <
+  vlan_id: 513
+  host: <
+    fqdn: "seesaw1-vlan513.example.com."
+    ipv4: "192.168.13.252/24"
+    ipv6: "2015:cafe:13::ff01/64"
+  >
+>
+vlan: <
+  vlan_id: 514
+  host: <
+    fqdn: "seesaw1-vlan514.example.com."
+    ipv4: "192.168.14.252/24"
+    ipv6: "2015:cafe:14::ff01/64"
+  >
+>
+vlan: <
+  vlan_id: 515
+  host: <
+    fqdn: "seesaw1-vlan515.example.com."
+    ipv4: "192.168.15.10/26"
+    ipv6: "2015:cafe:15::ff01/64"
+  >
+>
+metadata: <
+  last_updated: 1447906527
+>
+dedicated_vip_subnet: "192.168.100.0/26"
+dedicated_vip_subnet: "2015:cafe:100::/64"

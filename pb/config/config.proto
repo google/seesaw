@@ -1,0 +1,273 @@
+// Copyright 2012 Google Inc. All Rights Reserved
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Author: angusc@google.com (Angus Cameron)
+
+// SLB Config for Seesaw v2
+
+syntax = "proto2";
+
+message Host {
+  // Servicedb statuses
+  enum Status {
+    PRODUCTION = 1;
+    TESTING = 2;
+    BUILDING = 3;
+    STANDBY = 4;
+    FAILURE = 5;
+    DISABLED = 6;
+    PROPOSED = 7;
+  }
+
+  // Fully qualified hostname
+  required string fqdn = 1;
+
+  // An IPv4 address and prefix length in CIDR format
+  optional string ipv4 = 2;
+
+  // An IPv6 address and prefix length in CIDR format
+  optional string ipv6 = 3;
+
+  // Host status
+  optional Status status = 4;
+}
+
+message Backend {
+  required Host host = 1;
+  optional int32 weight = 2 [default = 1];
+}
+
+message Vlan {
+  required int32 vlan_id = 1;
+  required Host host = 2;
+}
+
+// TODO(angusc): Use different message types for the different healthcheck
+// types.
+message Healthcheck {
+  enum Type {
+    ICMP_PING = 1;
+    UDP = 2;
+    TCP = 3;
+    HTTP = 4;
+    HTTPS = 5;
+    DNS = 6;
+    TCP_TLS = 7;
+    RADIUS = 8;
+  }
+
+  enum Mode {
+    PLAIN = 1;
+    DSR = 2;
+  }
+
+  required Type type = 1;
+
+  // Healthcheck interval in seconds
+  optional int32 interval = 2 [default = 10];
+
+  // Healthcheck timeout in seconds
+  optional int32 timeout = 3 [default = 5];
+
+  // Healthcheck port.  For Vserver healthchecks, this field is required.
+  // For VserverEntry healthchecks, it is optional and uses the VserverEntry
+  // port by default.
+  optional int32 port = 4;
+
+  // String to send for UDP/TCP/HTTP(S) healthcheck.
+  optional string send = 5;
+
+  // Expected response for UDP/TCP/HTTP(S) healthcheck.
+  optional string receive = 6;
+
+  // Expected response code for healthcheck.
+  optional int32 code = 7;
+
+  // The Mode of this healthcheck.
+  optional Mode mode = 8 [default = PLAIN];
+
+  // The HTTP request method to use for an HTTP(S) healthcheck.
+  optional string method = 9;
+
+  // Perform a healthcheck against an HTTP proxy.
+  optional bool proxy = 10;
+
+  // Do TLS verification.
+  optional bool tls_verify = 11 [default = true];
+
+  // Number of retries before a healthcheck is considered to have failed.
+  optional int32 retries = 12;
+}
+
+enum Protocol {
+  TCP = 1;
+  UDP = 2;
+}
+
+message VserverEntry {
+  required Protocol protocol = 1;
+
+  required int32 port = 2;
+
+  // See --scheduler in man ipvsadm(8)
+  enum Scheduler {
+    RR = 1;
+    WRR = 2;
+    LC = 3;
+    WLC = 4;
+    SH = 5;
+  }
+  optional Scheduler scheduler = 5 [default = WLC];
+  enum Mode {
+    // See --gatewaying in man ipvsadm(8)
+    DSR = 1;
+
+    // See --masquerding in man ipvsadm(8)
+    NAT = 2;
+  }
+  optional Mode mode = 6 [default = DSR];
+
+  // See --persisent in man ipvsadm(8)
+  optional int32 persistence = 7;
+
+  // Continue sending packets for existing connections to the same backend,
+  // even when that backend is failing healthchecks.
+  optional bool quiescent = 8;
+
+  // The minimum fraction of backends that must be healthy for the vserver to be
+  // active. If the number of backends falls below this watermark, the vserver
+  // is considered unhealthy. Valid values are 0.0 to 1.0. If unset, the value
+  // of server_high_watermark is used.
+  optional float server_low_watermark = 9;
+
+  // The minimum fraction of backends that must be healthy for vserver to become
+  // active. Default is 0.0 .
+  optional float server_high_watermark = 10;
+
+  // --l-threshold per man ipvsadm(8)
+  optional int32 lthreshold = 11;
+
+  // --u-threshold per man ipvsadm(8)
+  optional int32 uthreshold = 12;
+
+  // The healthchecks to perform on the backends
+  repeated Healthcheck healthcheck = 13;
+
+  // Use "one packet" load balancing
+  optional bool one_packet = 14;
+}
+
+message AccessGrant {
+  enum Role {
+    ADMIN = 1;
+    OPS = 2;
+  }
+
+  enum Type {
+    USER = 1;
+    GROUP = 2;
+  }
+
+  // The user or group
+  required string grantee = 1;
+
+  // The Role granted to the grantee
+  required Role role = 2;
+
+  // The Type of AccessGrant
+  required Type type = 3;
+}
+
+message Vserver {
+  // The name of this vserver.
+  required string name = 1;
+
+  // VIP hostname and IP(s).
+  required Host entry_address = 2;
+
+  // Contact info for Responsible Party
+  required string rp = 3;
+
+  // Use firewall mark instead of individual service configurations.
+  optional bool use_fwm = 4;
+
+  repeated VserverEntry vserver_entry = 5;
+
+  // The list of backends for this vserver.
+  // TODO(mibus): Kill legacy_backend, and move "backend" down the list.
+  repeated Host legacy_backend = 6;
+  repeated Backend backend = 10;
+
+  // The healthchecks to perform on the backends, in addition to those that are
+  // VserverEntry specific.
+  repeated Healthcheck healthcheck = 7;
+
+  // The access grants for this vserver.
+  repeated AccessGrant access_grant = 8;
+
+  // Warning messages about this Vserver (such as misconfigured backends) to be
+  // displayed on operator consoles.
+  repeated string warning = 9;
+}
+
+message MisconfiguredVserver {
+  required string name = 1;
+  optional string error_message = 2;
+}
+
+message Attribute {
+  required string name = 1;
+  required string value = 2;
+}
+
+message Metadata {
+  // The UNIX timestamp at which the Cluster configuration was last updated.
+  required int64 last_updated = 1;
+
+  // Miscellaneous details about the Cluster configuration (info on upstream
+  // source data, etc) go here.
+  repeated Attribute attribute = 2;
+}
+
+message Cluster {
+  required Host seesaw_vip = 1;
+
+  repeated Host node = 2;
+
+  optional string vmac = 3 [default = "00:00:5E:00:01:01"];
+
+  // The local ASN for BGP peering.
+  optional uint32 bgp_local_asn = 4 [default = 64512];
+
+  // The remote ASN for BGP peering.  If unset, BGP will not be used.
+  optional uint32 bgp_remote_asn = 5;
+
+  // The BGP peers.  If empty, BGP will not be used.
+  repeated Host bgp_peer = 6;
+
+  // The service VIPs hosted by this cluster, excluding those that are
+  // misconfigured (see the misconfigured_vserver attribute).
+  repeated Vserver vserver = 7;
+
+  repeated Vlan vlan = 8;
+
+  // The list of vservers that have broken configurations.
+  repeated MisconfiguredVserver misconfigured_vserver = 9;
+
+  // Metadata about this Cluster configuration.
+  optional Metadata metadata = 10;
+
+  // The dedicated VIP subnet(s) for this cluster, in CIDR notation.
+  repeated string dedicated_vip_subnet = 11;
+}

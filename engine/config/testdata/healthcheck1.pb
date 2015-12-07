@@ -1,0 +1,10 @@
+type: HTTP
+interval: 100
+timeout: 200
+code: 200
+port: 99
+mode: DSR
+method: "HEAD"
+send: "foo"
+receive: "bar"
+proxy: true

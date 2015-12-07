@@ -1,0 +1,1 @@
+type: ICMP_PING

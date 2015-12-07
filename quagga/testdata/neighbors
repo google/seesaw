@@ -1,0 +1,88 @@
+BGP neighbor is 192.168.0.252, remote AS 64513, local AS 64512, external link
+ Description: au-syd-router1.example.com.
+ Member of peer-group SEESAW-PEERS for session parameters
+  BGP version 4, remote router ID 192.168.1.254
+  BGP state = Established, up for 03w2d10h
+  Last read 21:14:57, hold time is 30, keepalive interval is 10 seconds
+  Configured hold time is 30, keepalive interval is 10 seconds
+  Neighbor capabilities:
+    4 Byte AS: advertised and received
+    Route refresh: advertised and received(old & new)
+    Address family IPv4 Unicast: advertised and received
+  Message statistics:
+    Inq depth is 0
+    Outq depth is 0
+                         Sent       Rcvd
+    Opens:                  1          1
+    Notifications:          0          0
+    Updates:               15         12
+    Keepalives:        202300     197590
+    Route Refresh:          0          0
+    Capability:             0          0
+    Total:             202316     197603
+  Minimum time between advertisement runs is 30 seconds
+
+ For address family: IPv4 Unicast
+  SEESAW-PEERS peer-group member
+  Community attribute sent to this neighbor(both)
+  Inbound path policy configured
+  Outbound path policy configured
+  Route map for incoming advertisements is *NOROUTES
+  Route map for outgoing advertisements is *SEESAW-ANNOUNCE
+  0 accepted prefixes
+
+  Connections established 1; dropped 0
+  Last reset never
+  External BGP neighbor may be up to 4 hops away.
+Local host: 192.168.0.13, Local port: 39447
+Foreign host: 192.168.0.252, Foreign port: 179
+Nexthop: 192.168.0.13
+Nexthop global: 2015:cafe::ffee:ddcc:bbaa
+Nexthop local: fe80::a800:ffee:ddcc:bbaa
+BGP connection: non shared network
+Read thread: on  Write thread: off
+
+BGP neighbor is 192.168.0.253, remote AS 64513, local AS 64512, external link
+ Description: au-syd-router2.example.com.
+ Member of peer-group SEESAW-PEERS for session parameters
+  BGP version 4, remote router ID 192.168.2.254
+  BGP state = Active
+  Last read 21:14:51, hold time is 30, keepalive interval is 10 seconds
+  Configured hold time is 30, keepalive interval is 10 seconds
+  Neighbor capabilities:
+    4 Byte AS: advertised and received
+    Route refresh: advertised and received(old & new)
+    Address family IPv4 Unicast: advertised and received
+  Message statistics:
+    Inq depth is 0
+    Outq depth is 0
+                         Sent       Rcvd
+    Opens:                  1          1
+    Notifications:          0          0
+    Updates:               15         12
+    Keepalives:        202301     197590
+    Route Refresh:          0          0
+    Capability:             0          0
+    Total:             202317     197603
+  Minimum time between advertisement runs is 30 seconds
+
+ For address family: IPv4 Unicast
+  SEESAW-PEERS peer-group member
+  Community attribute sent to this neighbor(both)
+  Inbound path policy configured
+  Outbound path policy configured
+  Route map for incoming advertisements is *NOROUTES
+  Route map for outgoing advertisements is *SEESAW-ANNOUNCE
+  0 accepted prefixes
+
+  Connections established 1; dropped 0
+  Last reset never
+  External BGP neighbor may be up to 4 hops away.
+Local host: 192.168.0.13, Local port: 57975
+Foreign host: 192.168.0.253, Foreign port: 179
+Nexthop: 192.168.0.13
+Nexthop global: 2015:cafe::ffee:ddcc:bbaa
+Nexthop local: fe80::a800:ffee:ddcc:bbaa
+BGP connection: non shared network
+Read thread: on  Write thread: off
+
