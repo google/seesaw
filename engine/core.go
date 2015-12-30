@@ -400,6 +400,10 @@ func (e *Engine) manager() {
 			e.haManager.setState(seesaw.HAUnknown)
 
 		case svs := <-e.vserverChan:
+			if _, ok := e.vservers[svs.Name]; !ok {
+				log.Infof("Received vserver snapshot for unconfigured vserver %s, ignoring", svs.Name)
+				break
+			}
 			log.V(1).Infof("Updating vserver snapshot for %s", svs.Name)
 			e.vserverLock.Lock()
 			e.vserverSnapshots[svs.Name] = svs
@@ -449,6 +453,7 @@ func (e *Engine) updateVservers() {
 	// Delete vservers that no longer exist in the new configuration.
 	for name, vserver := range e.vservers {
 		if cluster.Vservers[name] == nil {
+			log.Infof("Stopping unconfigured vserver %s", name)
 			vserver.stop()
 			<-vserver.stopped
 			delete(e.vservers, name)
