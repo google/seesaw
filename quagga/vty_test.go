@@ -19,6 +19,7 @@ package quagga
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"syscall"
@@ -54,6 +55,7 @@ func newFakeVTYServer() (*fakeVTYServer, error) {
 	if err != nil {
 		return nil, err
 	}
+	syscall.SetNonblock(fds[0], false)
 
 	vs := &fakeVTYServer{
 		clientConn: vtyClientConn,
@@ -72,26 +74,25 @@ func newFakeVTYServer() (*fakeVTYServer, error) {
 }
 
 func (vs *fakeVTYServer) cleanup() {
-	// Stop read goroutine if it is still running.
-	select {
-	case <-vs.received:
-	default:
+	if vs.clientConn != nil {
+		vs.clientConn.Close()
+	}
+	if vs.clientFile != nil {
+		vs.clientFile.Close()
 	}
 
-	// Stop write goroutine if it is still running.
+	// Unblock the read goroutine and wait for it to finish.
+	for range vs.received {
+	}
+
+	// Unblock the write goroutine if it is still running.
 	select {
 	case vs.done <- true:
 	default:
 	}
 
-	if vs.clientConn != nil {
-		vs.clientConn.Close()
-	}
 	if vs.serverConn != nil {
 		vs.serverConn.Close()
-	}
-	if vs.clientFile != nil {
-		vs.clientFile.Close()
 	}
 	if vs.serverFile != nil {
 		vs.serverFile.Close()
@@ -100,17 +101,26 @@ func (vs *fakeVTYServer) cleanup() {
 
 func (vs *fakeVTYServer) read() {
 	b := make([]byte, 100)
-	r := make([]byte, 0)
+	var r []byte
 	for {
 		n, err := vs.serverFile.Read(b)
 		if err != nil {
+			if err != io.EOF {
+				panic(err)
+			}
 			break
 		}
 		for _, v := range b[:n] {
 			r = append(r, v)
+			// VTY client commands are terminated with a single NULL byte.
+			// See also: VTY.write.
+			if v == '\x00' {
+				vs.received <- r
+				r = r[:0]
+			}
 		}
 	}
-	vs.received <- r
+	close(vs.received)
 }
 
 func (vs *fakeVTYServer) write() {
@@ -126,7 +136,7 @@ func (vs *fakeVTYServer) write() {
 		}
 		n, err := vs.serverFile.Write(s)
 		if err != nil {
-			return
+			panic(err)
 		}
 		s = s[n:]
 	}
@@ -152,9 +162,7 @@ func TestVTYRead(t *testing.T) {
 
 	msg := "this is a test"
 
-	send := []byte(msg)
-	send = append(send, 0, 0, 0, 0)
-	vs.send <- send
+	vs.send <- append([]byte(msg), 0, 0, 0, 0)
 
 	got, status, err := vty.read()
 	if err != nil {
@@ -176,11 +184,11 @@ func TestVTYWrite(t *testing.T) {
 	defer vs.cleanup()
 
 	msg := "this is a test"
-	want := []byte(msg)
-	want = append(want, 0)
-	vty.write(msg)
+	want := append([]byte(msg), 0)
+	if err := vty.write(msg); err != nil {
+		t.Fatalf("vty.write failed: %v", err)
+	}
 
-	vs.clientFile.Close()
 	got := <-vs.received
 	if !bytes.Equal(got, want) {
 		t.Errorf("Server received %#v, want %#v", got, want)
@@ -195,9 +203,7 @@ func TestVTYCommand(t *testing.T) {
 	defer vs.cleanup()
 
 	reply := "No BGP network exists\n"
-	send := []byte(reply)
-	send = append(send, 0, 0, 0, 0)
-	vs.send <- send
+	vs.send <- append([]byte(reply), 0, 0, 0, 0)
 
 	got, err := vty.Command("show bgp")
 	if err != nil {
@@ -217,9 +223,7 @@ func TestVTYCommandWithError(t *testing.T) {
 
 	reply := "% [BGP] Unknown command: enable\n"
 	status := byte(2)
-	send := []byte(reply)
-	send = append(send, 0, 0, 0, status)
-	vs.send <- send
+	vs.send <- append([]byte(reply), 0, 0, 0, status)
 
 	_, err = vty.Command("enable")
 	if err == nil {
