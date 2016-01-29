@@ -304,7 +304,17 @@ func marshal(v reflect.Value, field string, params *fieldParams, nlm *C.struct_n
 		if k := v.Type().Elem().Kind(); k != reflect.Uint8 {
 			return fmt.Errorf("field %s is an array of unsupported type %v", field, k)
 		}
-		if errno := C.nla_put(nlm, C.int(params.attr), C.int(v.Len()), unsafe.Pointer(v.UnsafeAddr())); errno != 0 {
+		// Passing down the array pointer directly can trip
+		// the cgo pointer checks if the array is part of a
+		// larger struct that contains pointers, since cgo
+		// can't tell that we are only passing the array.
+		// Avoid the checks by making a copy.
+		vl := v.Len()
+		b := make([]byte, vl)
+		for i := 0; i < vl; i++ {
+			b[i] = byte(v.Index(i).Uint())
+		}
+		if errno := C.nla_put(nlm, C.int(params.attr), C.int(vl), unsafe.Pointer(&b[0])); errno != 0 {
 			return &Error{errno, "failed to put data"}
 		}
 
@@ -393,7 +403,7 @@ func unmarshal(v reflect.Value, field string, params *fieldParams, attrs map[uin
 		}
 	}
 
-	if !v.CanSet() {
+	if v.Kind() != reflect.Struct && !v.CanSet() {
 		return fmt.Errorf("field %s is unsettable", field)
 	}
 
@@ -404,7 +414,13 @@ func unmarshal(v reflect.Value, field string, params *fieldParams, attrs map[uin
 		v = v.Elem()
 	}
 
-	if nl, ok := v.Addr().Interface().(Unmarshaler); ok {
+	va := v.Addr()
+	var unmarshaler Unmarshaler
+	if va.Type().Implements(reflect.TypeOf(&unmarshaler).Elem()) {
+		if !v.CanSet() {
+			return fmt.Errorf("field %s implements Unmarshaler but is unsettable", field)
+		}
+		nl := va.Interface().(Unmarshaler)
 		b := C.GoBytes(unsafe.Pointer(C.nla_data(attr.nla)), C.int(attr.nla.nla_len))
 		nl.SetBytes(b)
 		return nil
