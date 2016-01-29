@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync"
 	"unsafe"
 )
 
@@ -56,9 +57,39 @@ type CallbackFunc func(*Message, interface{}) error
 
 // callbackArg contains information passed for libnl callbacks.
 type callbackArg struct {
+	id  uintptr
 	fn  CallbackFunc
 	arg interface{}
 	err error
+}
+
+var (
+	nextCallbackID uintptr
+	callbacks      = make(map[uintptr]*callbackArg)
+	callbacksLock  sync.RWMutex
+)
+
+// registerCallback registers a callback and returns the allocated callback ID.
+func registerCallback(cbArg *callbackArg) uintptr {
+	callbacksLock.Lock()
+	defer callbacksLock.Unlock()
+	cbArg.id = nextCallbackID
+	nextCallbackID++
+	if _, ok := callbacks[cbArg.id]; ok {
+		panic(fmt.Sprintf("Callback ID %d already in use", cbArg.id))
+	}
+	callbacks[cbArg.id] = cbArg
+	return cbArg.id
+}
+
+// unregisterCallback unregisters a callback.
+func unregisterCallback(cbArg *callbackArg) {
+	callbacksLock.Lock()
+	defer callbacksLock.Unlock()
+	if _, ok := callbacks[cbArg.id]; !ok {
+		panic(fmt.Sprintf("Callback ID %d not registered", cbArg.id))
+	}
+	delete(callbacks, cbArg.id)
 }
 
 // callback is the Go callback trampoline that is called from the
@@ -66,7 +97,15 @@ type callbackArg struct {
 //
 //export callback
 func callback(nlm *C.struct_nl_msg, nla unsafe.Pointer) C.int {
-	cbArg := (*callbackArg)(nla)
+	cbID := uintptr(nla)
+	callbacksLock.RLock()
+	cbArg := callbacks[cbID]
+	callbacksLock.RUnlock()
+
+	if cbArg == nil {
+		panic(fmt.Sprintf("No netlink callback with ID %d", cbID))
+	}
+
 	cbMsg := &Message{nlm: nlm}
 	if err := cbArg.fn(cbMsg, cbArg.arg); err != nil {
 		cbArg.err = err
@@ -199,7 +238,10 @@ func (m *Message) SendCallback(fn CallbackFunc, arg interface{}) error {
 	defer C.nl_close(s.nls)
 
 	cbArg := &callbackArg{fn: fn, arg: arg}
-	if errno := C.nl_socket_modify_cb(s.nls, C.NL_CB_VALID, C.NL_CB_CUSTOM, (C.nl_recvmsg_msg_cb_t)(unsafe.Pointer(C.callbackGateway)), unsafe.Pointer(cbArg)); errno != 0 {
+	cbID := registerCallback(cbArg)
+	defer unregisterCallback(cbArg)
+
+	if errno := C.nl_socket_modify_cb(s.nls, C.NL_CB_VALID, C.NL_CB_CUSTOM, (C.nl_recvmsg_msg_cb_t)(unsafe.Pointer(C.callbackGateway)), unsafe.Pointer(cbID)); errno != 0 {
 		return &Error{errno, "failed to modify callback"}
 	}
 	// nl_send_auto_complete returns number of bytes sent or a negative
