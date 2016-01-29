@@ -20,11 +20,15 @@ package ha
 
 import (
 	"fmt"
+	"net"
 	"net/rpc"
+	"time"
 
 	"github.com/google/seesaw/common/ipc"
 	"github.com/google/seesaw/common/seesaw"
 )
+
+const engineTimeout = 10 * time.Second
 
 // Engine represents an interface to a Seesaw Engine.
 type Engine interface {
@@ -41,10 +45,12 @@ type EngineClient struct {
 
 // HAConfig requests the HAConfig from the Seesaw Engine.
 func (e *EngineClient) HAConfig() (*seesaw.HAConfig, error) {
-	engine, err := rpc.Dial("unix", e.Socket)
+	engineConn, err := net.DialTimeout("unix", e.Socket, engineTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("HAConfig: Dial failed: %v", err)
 	}
+	engineConn.SetDeadline(time.Now().Add(engineTimeout))
+	engine := rpc.NewClient(engineConn)
 	defer engine.Close()
 
 	var config seesaw.HAConfig
@@ -57,10 +63,12 @@ func (e *EngineClient) HAConfig() (*seesaw.HAConfig, error) {
 
 // HAState informs the Seesaw Engine of the current HAState.
 func (e *EngineClient) HAState(state seesaw.HAState) error {
-	engine, err := rpc.Dial("unix", e.Socket)
+	engineConn, err := net.DialTimeout("unix", e.Socket, engineTimeout)
 	if err != nil {
 		return fmt.Errorf("HAState: Dial failed: %v", err)
 	}
+	engineConn.SetDeadline(time.Now().Add(engineTimeout))
+	engine := rpc.NewClient(engineConn)
 	defer engine.Close()
 
 	var reply int
@@ -74,10 +82,12 @@ func (e *EngineClient) HAState(state seesaw.HAState) error {
 // HAUpdate informs the Seesaw Engine of the current HAStatus.
 // The Seesaw Engine may request a failover in response.
 func (e *EngineClient) HAUpdate(status seesaw.HAStatus) (bool, error) {
-	engine, err := rpc.Dial("unix", e.Socket)
+	engineConn, err := net.DialTimeout("unix", e.Socket, engineTimeout)
 	if err != nil {
 		return false, fmt.Errorf("HAUpdate: Dial failed: %v", err)
 	}
+	engineConn.SetDeadline(time.Now().Add(engineTimeout))
+	engine := rpc.NewClient(engineConn)
 	defer engine.Close()
 
 	var failover bool

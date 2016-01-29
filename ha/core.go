@@ -237,6 +237,7 @@ func (n *Node) becomeBackup() {
 func (n *Node) becomeShutdown() {
 	log.Infof("Node.becomeShutdown")
 	if err := n.engine.HAState(seesaw.HAShutdown); err != nil {
+		// Ignore for now - reportStatus will notify the engine or die trying.
 		log.Errorf("Failed to notify engine: %v", err)
 	}
 
