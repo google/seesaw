@@ -32,6 +32,8 @@ import (
 	log "github.com/golang/glog"
 )
 
+const engineTimeout = 10 * time.Second
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -471,10 +473,12 @@ func (s *Server) Run() {
 // getHealthchecks attempts to get the current healthcheck configurations from
 // the Seesaw Engine.
 func (s *Server) getHealthchecks() (*Checks, error) {
-	engine, err := rpc.Dial("unix", s.config.EngineSocket)
+	engineConn, err := net.DialTimeout("unix", s.config.EngineSocket, engineTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("Dial failed: %v", err)
 	}
+	engineConn.SetDeadline(time.Now().Add(engineTimeout))
+	engine := rpc.NewClient(engineConn)
 	defer engine.Close()
 
 	var checks Checks
@@ -591,10 +595,12 @@ func (s *Server) send() error {
 
 // sendBatch sends a batch of notifications to the Seesaw Engine.
 func (s *Server) sendBatch(batch []*Notification) error {
-	engine, err := rpc.Dial("unix", s.config.EngineSocket)
+	engineConn, err := net.DialTimeout("unix", s.config.EngineSocket, engineTimeout)
 	if err != nil {
 		return err
 	}
+	engineConn.SetDeadline(time.Now().Add(engineTimeout))
+	engine := rpc.NewClient(engineConn)
 	defer engine.Close()
 
 	var reply int
