@@ -1,5 +1,7 @@
 # Seesaw v2
 
+[![GoDoc](https://godoc.org/github.com/google/seesaw?status.svg)](https://godoc.org/github.com/google/seesaw)
+
 Note: This is not an official Google product.
 
 ## About
@@ -30,8 +32,8 @@ Seesaw v2 is developed in Go and depends on several Go packages:
 - [github.com/golang/protobuf/proto](http://godoc.org/github.com/golang/protobuf/proto)
 - [github.com/miekg/dns](http://godoc.org/github.com/miekg/dns)
 
-Additionally, there is a compile and runtime dependency on libnl
-(https://www.infradead.org/~tgr/libnl/) and a compile time dependency on
+Additionally, there is a compile and runtime dependency on
+[libnl](https://www.infradead.org/~tgr/libnl/) and a compile time dependency on
 the Go protobuf compiler.
 
 On a Debian/Ubuntu style system, you should be able to prepare for building
@@ -121,7 +123,7 @@ an anycast VIP when it becomes available and will withdraw the anycast VIP if
 it becomes unavailable. For this to work the Quagga BGP daemon needs to be
 installed and configured, with the BGP peers accepting host-specific routes
 that are advertised from the Seesaw nodes within the anycast range (currently
-hardcoded as 192.168.255.0/24).
+hardcoded as `192.168.255.0/24`).
 
 ## Command Line
 
@@ -150,5 +152,4 @@ process table should show processes for:
 
 All Seesaw v2 components have their own logs, in addition to the logging
 provided by the watchdog. If any of the processes are not running, check the
-corresponding logs in `/var/log/seesaw` - for example
-`seesaw_engine.{log,INFO}`.
+corresponding logs in `/var/log/seesaw` (e.g. `seesaw_engine.{log,INFO}`).
