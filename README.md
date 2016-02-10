@@ -43,6 +43,9 @@ by running:
     apt-get install protobuf-compiler
     apt-get install libnl-3-dev libnl-genl-3-dev
 
+If your distro has a go version before 1.5, you may need to fetch a newer
+release from https://golang.org/dl/.
+
 After setting `GOPATH` to an appropriate location (for example `~/go`):
 
     go get -u golang.org/x/crypto/ssh
