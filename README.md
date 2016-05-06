@@ -53,6 +53,7 @@ After setting `GOPATH` to an appropriate location (for example `~/go`):
     go get -u github.com/golang/glog
     go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
     go get -u github.com/miekg/dns
+    go get -u github.com/kylelemons/godebug/pretty
 
 Ensure that `${GOPATH}/bin` is in your `${PATH}` and in the seesaw directory:
 

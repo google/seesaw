@@ -45,8 +45,8 @@ type vserver struct {
 	services   map[serviceKey]*service
 	checks     map[checkKey]*check
 	active     map[seesaw.IP]bool
-	lbVservers map[seesaw.IP]*seesaw.Vserver
-	vips       map[seesaw.VIP]bool
+	lbVservers map[seesaw.IP]*seesaw.Vserver // vservers with configured iptables rules
+	vips       map[seesaw.VIP]bool           // unicast VIPs
 
 	vserverOverride seesaw.VserverOverride
 	overrideChan    chan seesaw.Override
@@ -675,6 +675,19 @@ func (v *vserver) configUpdate() {
 		}
 	}
 
+	// If a VIP has been re-IP'd or has no services configured, remove the old
+	// VIP from the interface.
+	needVIPs := make(map[seesaw.IP]bool)
+	for _, svc := range v.services {
+		needVIPs[svc.ip] = true
+	}
+	for vip := range v.vips {
+		if !needVIPs[vip.IP] {
+			log.Infof("%v: unconfiguring no longer needed VIP %v", v, vip.IP)
+			v.unconfigureVIP(&vip)
+		}
+	}
+
 	checks := v.expandChecks()
 	for k, oldCheck := range v.checks {
 		if checks[k] != nil {
@@ -683,6 +696,7 @@ func (v *vserver) configUpdate() {
 		}
 	}
 	v.checks = checks
+	// TODO(baptr): Should this only happen if it's enabled?
 	v.configureVIPs()
 	return
 }
@@ -695,6 +709,8 @@ func (v *vserver) deleteService(s *service) {
 	}
 	log.Infof("%v: deleting service: %v", v, s)
 	delete(v.services, s.serviceKey)
+	// TODO(baptr): Once service contains seesaw.VIP, move check and
+	// unconfigureVIP here.
 }
 
 // handleCheckNotification processes a checkNotification, bringing
@@ -1284,6 +1300,7 @@ func (v *vserver) down(ip seesaw.IP) {
 		if err := v.engine.lbInterface.DeleteVserver(v.lbVservers[ip], ip.AF()); err != nil {
 			log.Fatalf("%v: failed to delete Vserver: %v", v, err)
 		}
+		delete(v.lbVservers, ip)
 	}
 	// TODO(jsing): Should we delay while the BGP routes propagate?
 
@@ -1354,7 +1371,7 @@ func (v *vserver) unconfigureVIP(vip *seesaw.VIP) {
 		if err := v.engine.lbInterface.DeleteVserver(v.lbVservers[vip.IP], vip.IP.AF()); err != nil {
 			log.Fatalf("%v: failed to delete Vserver: %v", v, err)
 		}
-		// TODO(baptr): delete(v.lbVservers, vip.IP)?
+		delete(v.lbVservers, vip.IP)
 	}
 	delete(v.vips, *vip)
 }
