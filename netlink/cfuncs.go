@@ -17,13 +17,23 @@ package netlink
 /*
 #cgo CFLAGS: -I/usr/include/libnl3
 
+#include <stdint.h>
+
 #include <netlink/netlink.h>
 
+// Forward declaration of Go callback trampoline.
 int callback(struct nl_msg *msg, void *arg);
 
-int callbackGateway(struct nl_msg *msg, void *arg)
-{
+int callbackGateway(struct nl_msg *msg, void *arg) {
 	return callback(msg, arg);
+}
+
+// Wrapper around the equivalent libnl function to provide a cgo-friendly
+// callback arg.
+int _nl_socket_modify_cb(struct nl_sock *sk, enum nl_cb_type type,
+                         enum nl_cb_kind kind, nl_recvmsg_msg_cb_t func,
+                         uintptr_t arg) {
+	return nl_socket_modify_cb(sk, type, kind, func, (void*)arg);
 }
 */
 import "C"

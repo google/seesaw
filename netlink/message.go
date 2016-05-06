@@ -31,7 +31,11 @@ import (
 #include <netlink/netlink.h>
 #include <netlink/genl/genl.h>
 
+// Forward declarations for cfuncs.go.
 int callbackGateway(struct nl_msg *msg, void *arg);
+int _nl_socket_modify_cb(struct nl_sock *sk, enum nl_cb_type type,
+                         enum nl_cb_kind kind, nl_recvmsg_msg_cb_t func,
+                         uintptr_t arg);
 */
 import "C"
 
@@ -241,7 +245,7 @@ func (m *Message) SendCallback(fn CallbackFunc, arg interface{}) error {
 	cbID := registerCallback(cbArg)
 	defer unregisterCallback(cbArg)
 
-	if errno := C.nl_socket_modify_cb(s.nls, C.NL_CB_VALID, C.NL_CB_CUSTOM, (C.nl_recvmsg_msg_cb_t)(unsafe.Pointer(C.callbackGateway)), unsafe.Pointer(cbID)); errno != 0 {
+	if errno := C.nl_socket_modify_cb(s.nls, C.NL_CB_VALID, C.NL_CB_CUSTOM, (C.nl_recvmsg_msg_cb_t)(unsafe.Pointer(C.callbackGateway)), C.uintptr_t(cbID)); errno != 0 {
 		return &Error{errno, "failed to modify callback"}
 	}
 	// nl_send_auto_complete returns number of bytes sent or a negative
