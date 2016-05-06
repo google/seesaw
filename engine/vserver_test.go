@@ -28,6 +28,9 @@ import (
 	"github.com/google/seesaw/common/seesaw"
 	"github.com/google/seesaw/engine/config"
 	"github.com/google/seesaw/healthcheck"
+	"github.com/kylelemons/godebug/pretty"
+
+	log "github.com/golang/glog"
 )
 
 const testDataDir = "testdata"
@@ -202,8 +205,8 @@ func TestExpandServices(t *testing.T) {
 			continue
 		}
 		if !s.ip.Equal(es.ip) {
-			t.Errorf("Service failed to match - want %v, got %v",
-				es.ip, s.ip)
+			t.Errorf("Service failed to match - got %v, want %v",
+				s.ip, es.ip)
 		}
 		dsts := vserver.expandDests(s)
 		if len(dsts) != len(es.expectedDests) {
@@ -238,8 +241,8 @@ func TestExpandFWMServices(t *testing.T) {
 			continue
 		}
 		if !s.ip.Equal(es.ip) {
-			t.Errorf("FWM service IP failed to match - want %v, got %v",
-				es.ip, s.ip)
+			t.Errorf("FWM service IP failed to match - got %v, want %v",
+				s.ip, es.ip)
 		}
 		dsts := vserver.expandDests(s)
 		if len(dsts) != len(es.expectedDests) {
@@ -962,21 +965,17 @@ func TestVserverSnapshot(t *testing.T) {
 	vserver.handleConfigUpdate(&vserverConfig)
 	snapshot := vserver.snapshot()
 
-	if expectedSnapshot.Name != snapshot.Name {
-		t.Errorf("Snapshot name mismatch - want %s, got %s",
-			expectedSnapshot.Name, snapshot.Name)
+	if got, want := snapshot.Name, expectedSnapshot.Name; got != want {
+		t.Errorf("Snapshot name mismatch - got %s, want %s", got, want)
 	}
-	if expectedSnapshot.Enabled != snapshot.Enabled {
-		t.Errorf("Snapshot enabled mismatch - want %s, got %s",
-			expectedSnapshot.Enabled, snapshot.Enabled)
+	if got, want := snapshot.Enabled, expectedSnapshot.Enabled; got != want {
+		t.Errorf("Snapshot enabled mismatch - got %s, want %s", got, want)
 	}
-	if !reflect.DeepEqual(expectedSnapshot.Host, snapshot.Host) {
-		t.Errorf("Snapshot vserver host mismatch - want %#v, got %#v",
-			expectedSnapshot.Host, snapshot.Host)
+	if got, want := snapshot.Host, expectedSnapshot.Host; !reflect.DeepEqual(got, want) {
+		t.Errorf("Snapshot vserver host mismatch - got %#v, want %#v", got, want)
 	}
-	if len(expectedSnapshot.Services) != len(snapshot.Services) {
-		t.Errorf("Snapshot has incorrect number of services - want %d, got %d",
-			len(expectedSnapshot.Services), len(snapshot.Services))
+	if got, want := len(snapshot.Services), len(expectedSnapshot.Services); got != want {
+		t.Errorf("Snapshot has incorrect number of services - got %d, want %d", got, want)
 	}
 
 	for _, svc := range snapshot.Services {
@@ -991,15 +990,15 @@ func TestVserverSnapshot(t *testing.T) {
 		expectedSvc.Destinations = nil
 		svc.Destinations = nil
 		if !reflect.DeepEqual(expectedSvc, svc) {
-			t.Errorf("Snapshot service mismatch - want %#v, got %#v",
-				expectedSvc, svc)
+			t.Errorf("Snapshot service mismatch - got %#v, want %#v",
+				svc, expectedSvc)
 		}
 		expectedSvc.Destinations = expectedDests
 		svc.Destinations = dests
 
-		if len(expectedDests) != len(dests) {
-			t.Errorf("Snapshot service has incorrect number of destinations - want %d, got %d",
-				len(expectedDests), len(dests))
+		if got, want := len(dests), len(expectedDests); got != want {
+			t.Errorf("Snapshot service has incorrect number of destinations - got %d, want %d",
+				got, want)
 			continue
 		}
 		for _, dst := range dests {
@@ -1013,12 +1012,12 @@ func TestVserverSnapshot(t *testing.T) {
 			expectedDst.Backend = nil
 			dst.Backend = nil
 			if !reflect.DeepEqual(expectedDst, dst) {
-				t.Errorf("Snapshot destination mismatch - want %#v, got %#v",
-					expectedDst, dst)
+				t.Errorf("Snapshot destination mismatch - got %#v, want %#v",
+					dst, expectedDst)
 			}
 			if !reflect.DeepEqual(expectedBackend, backend) {
-				t.Errorf("Snapshot backend mismatch - want %#v, got %#v",
-					expectedBackend, backend)
+				t.Errorf("Snapshot backend mismatch - got %#v, want %#v",
+					backend, expectedBackend)
 			}
 			expectedDst.Backend = expectedBackend
 			dst.Backend = backend
@@ -1659,17 +1658,18 @@ var updateTests = []struct {
 	},
 }
 
-func applyConfig(t *testing.T, vserver *vserver, file, clusterName, serviceName string) {
+func applyConfig(vserver *vserver, file, clusterName, serviceName string) error {
 	filename := filepath.Join(testDataDir, file)
 	n, err := config.ReadConfig(filename, clusterName)
 	if err != nil {
-		t.Fatalf("Failed to read %v", file)
+		return err
 	}
 	config := n.Cluster.Vservers[serviceName]
 	if config == nil {
-		t.Fatalf("Failed to find vserver config for %v", serviceName)
+		return fmt.Errorf("unable to find vserver config for %s", serviceName)
 	}
 	vserver.handleConfigUpdate(config)
+	return nil
 }
 
 func compareChecks(got, want map[checkKey]*check) []error {
@@ -1691,23 +1691,27 @@ func compareChecks(got, want map[checkKey]*check) []error {
 }
 
 func compareServiceStates(want []*service, got map[serviceKey]*service) []error {
-	errs := make([]error, 0)
-	if len(want) != len(got) {
-		errs = append(errs, fmt.Errorf("Want %v services, got %d", len(want), len(got)))
+	var errs []error
+	if len(got) != len(want) {
+		errs = append(errs, fmt.Errorf("Got %d services, want %d", len(got), len(want)))
 	}
 	for _, wantSvc := range want {
 		gotSvc, ok := got[wantSvc.serviceKey]
 		if !ok {
-			errs = append(errs, fmt.Errorf("Want service %v, got <nil>", wantSvc))
+			errs = append(errs, fmt.Errorf("Got service <nil>, want %v", wantSvc))
 			continue
 		}
-		if wantSvc.healthy != gotSvc.healthy {
-			errs = append(errs, fmt.Errorf("Service %v healthy: want %v, got %v",
-				wantSvc, wantSvc.healthy, gotSvc.healthy))
+		if gotSvc.ip != wantSvc.ip {
+			errs = append(errs, fmt.Errorf("Service %v.ip = %v, want %v",
+				gotSvc, gotSvc.ip, wantSvc.ip))
 		}
-		if wantSvc.active != gotSvc.active {
-			errs = append(errs, fmt.Errorf("Service %v active: want %v, got %v",
-				wantSvc, wantSvc.active, gotSvc.active))
+		if gotSvc.healthy != wantSvc.healthy {
+			errs = append(errs, fmt.Errorf("Service %v.healthy = %v, want %v",
+				gotSvc, gotSvc.healthy, wantSvc.healthy))
+		}
+		if gotSvc.active != wantSvc.active {
+			errs = append(errs, fmt.Errorf("Service %v.active = %v, want %v",
+				gotSvc, gotSvc.active, wantSvc.active))
 		}
 	}
 	return errs
@@ -1718,7 +1722,10 @@ func TestUpdateVserver(t *testing.T) {
 	clusterName := "au-syd"
 	serviceName := "dns.resolver@au-syd"
 	for _, test := range updateTests {
-		applyConfig(t, vserver, test.file, clusterName, serviceName)
+		log.Infof("Applying config: %s", test.desc)
+		if err := applyConfig(vserver, test.file, clusterName, serviceName); err != nil {
+			t.Fatalf("Failed to apply configuration: %v", err)
+		}
 		for _, n := range test.notifications {
 			vserver.handleCheckNotification(n)
 		}
@@ -1737,6 +1744,85 @@ func TestUpdateVserver(t *testing.T) {
 			for _, err := range checkAllDown(vserver) {
 				t.Errorf("%q: %v", test.desc, err)
 			}
+		}
+	}
+}
+
+func TestReIPVserver(t *testing.T) {
+	e := newTestEngine()
+	vserver := newTestVserver(e)
+	lbIF := e.lbInterface.(*dummyLBInterface)
+	clusterName := "au-syd"
+	serviceName := "dns.resolver@au-syd"
+	tests := []struct {
+		desc    string
+		file    string
+		health  healthcheck.State
+		wantIPs []string
+	}{
+		{desc: "initial", file: "re-ip/config_1.pb", wantIPs: []string{"192.168.36.1"}},
+		{desc: "re-ip unicast", file: "re-ip/config_2.pb", wantIPs: []string{"192.168.36.5"}},
+		{desc: "unicast unhealthy", health: healthcheck.StateUnhealthy, wantIPs: []string{"192.168.36.5"}},
+		{desc: "unicast disabled", file: "re-ip/config_3.pb", wantIPs: nil},
+		{desc: "re-ip anycast (unhealthy)", file: "re-ip/config_4.pb", wantIPs: nil},
+		{desc: "anycast health", health: healthcheck.StateHealthy, wantIPs: []string{"192.168.255.1"}},
+		{desc: "anycast disabled", file: "re-ip/config_5.pb", wantIPs: nil},
+		{desc: "back to unicast", file: "re-ip/config_1.pb", wantIPs: []string{"192.168.36.1"}},
+	}
+	for _, tc := range tests {
+		log.Infof("Applying config: %s", tc.desc)
+		if tc.file != "" {
+			if err := applyConfig(vserver, tc.file, clusterName, serviceName); err != nil {
+				t.Fatalf("Failed to apply configuration: %v", err)
+			}
+		}
+
+		if tc.health != healthcheck.StateUnknown {
+			for k := range vserver.checks {
+				n := &checkNotification{
+					key:         k,
+					description: fmt.Sprintf("forced health=%v for step %q", tc.health, tc.desc),
+					status:      healthcheck.Status{State: tc.health},
+				}
+				vserver.handleCheckNotification(n)
+			}
+		}
+
+		wantVIPs := make(map[string]bool)
+		for _, s := range tc.wantIPs {
+			wantVIPs[s] = true
+		}
+
+		if seesaw.IsAnycast(vserver.config.IPv4Addr) {
+			// vserver.vips only tracks unicast VIPs today, so we can only check that
+			// there are none.
+			if len(vserver.vips) > 0 {
+				t.Errorf("vserver(%q).vips = %v, wanted no unicast vips", tc.desc, vserver.vips)
+			}
+		} else {
+			gotVIPs := make(map[string]bool)
+			for v := range vserver.vips {
+				gotVIPs[v.IP.String()] = true
+			}
+			if diff := pretty.Compare(wantVIPs, gotVIPs); diff != "" {
+				t.Errorf("vserver(%q).vips unexpected (-want +got):\n%s", tc.desc, diff)
+			}
+		}
+
+		gotLBVS := make(map[string]bool)
+		for v := range vserver.lbVservers {
+			gotLBVS[v.String()] = true
+		}
+		if diff := pretty.Compare(wantVIPs, gotLBVS); diff != "" {
+			t.Errorf("vserver(%q).lbVservers (-want +got):\n%s", tc.desc, diff)
+		}
+
+		gotIFIPs := make(map[string]bool)
+		for v := range lbIF.vips {
+			gotIFIPs[v.IP.String()] = true
+		}
+		if diff := pretty.Compare(wantVIPs, gotIFIPs); diff != "" {
+			t.Errorf("After %s, unexpected IPs on the LB interface (-want +got):\n%s", tc.desc, diff)
 		}
 	}
 }
