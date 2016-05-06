@@ -35,6 +35,7 @@ import (
 const (
 	opARPRequest = 1
 	opARPReply   = 2
+	hwLen        = 6
 )
 
 var (
@@ -86,15 +87,15 @@ func gratuitousARPReply(ip net.IP, mac net.HardwareAddr) (*arpMessage, error) {
 	if ip.To4() == nil {
 		return nil, fmt.Errorf("%q is not an IPv4 address", ip)
 	}
-	if len(mac) != 6 {
+	if len(mac) != hwLen {
 		return nil, fmt.Errorf("%q is not an Ethernet MAC address", mac)
 	}
 
 	m := &arpMessage{
 		arpHeader{
-			6,           // IEEE 802
-			0x0800,      // Ethernet
-			6,           // 48-bit MAC Address
+			1,           // Ethernet
+			0x0800,      // IPv4
+			hwLen,       // 48-bit MAC Address
 			net.IPv4len, // 32-bit IPv4 Address
 			opARPReply,  // ARP Reply
 		},
