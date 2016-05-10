@@ -615,10 +615,20 @@ func (v *vserver) handleConfigUpdate(config *config.Vserver) {
 func (v *vserver) configInit(config *config.Vserver) {
 	v.config = config
 	v.enabled = vserverEnabled(config, v.vserverOverride.State())
-	v.services = v.expandServices()
-	for _, svc := range v.services {
+	newSvcs := v.expandServices()
+	// Preserve stats if this is a reinit
+	for svcK, svc := range newSvcs {
 		svc.dests = v.expandDests(svc)
+		if oldSvc, ok := v.services[svcK]; ok {
+			*svc.stats = *oldSvc.stats
+			for dstK, dst := range svc.dests {
+				if oldDst, ok := oldSvc.dests[dstK]; ok {
+					*dst.stats = *oldDst.stats
+				}
+			}
+		}
 	}
+	v.services = newSvcs
 	v.checks = v.expandChecks()
 	if v.enabled {
 		v.configureVIPs()

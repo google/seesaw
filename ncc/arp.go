@@ -75,7 +75,7 @@ func (m *arpMessage) bytes() ([]byte, error) {
 	buf.Write(m.senderHardwareAddress)
 	buf.Write(m.senderProtocolAddress)
 	buf.Write(m.targetHardwareAddress)
-	buf.Write(m.targetHardwareAddress)
+	buf.Write(m.targetProtocolAddress)
 
 	return buf.Bytes(), nil
 }
