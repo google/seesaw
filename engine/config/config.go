@@ -25,7 +25,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"time"
 
@@ -36,15 +35,11 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-var (
-	configServerRE = regexp.MustCompile(`^[\w-\.]+\.google\.com\.?$`)
-
-	defaultArchiveConfig = archiveConfig{
-		age:   60 * 24 * time.Hour,
-		bytes: 10 * 1 << 30,
-		count: 1500,
-	}
-)
+var defaultArchiveConfig = archiveConfig{
+	age:   60 * 24 * time.Hour,
+	bytes: 10 * 1 << 30,
+	count: 1500,
+}
 
 // Source specifies a source of configuration information.
 type Source int

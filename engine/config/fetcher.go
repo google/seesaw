@@ -147,10 +147,6 @@ func fetchConfig(f *fetcher, host string, ip net.IP) (string, []byte, error) {
 
 func (f *fetcher) fetch(handler fetchHandler) (string, []byte, error) {
 	for _, server := range f.servers {
-		if !configServerRE.MatchString(server) {
-			log.Errorf("Invalid config server name: %q", server)
-			continue
-		}
 		// TODO(angusc): Resolve and cache the IP address for each server so we have
 		// a fallback in case DNS is down.
 		addrs, err := net.LookupIP(server)
