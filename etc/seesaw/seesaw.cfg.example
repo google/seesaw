@@ -9,9 +9,9 @@ vip_ipv4 = 192.168.10.1
 vip_ipv6 = 2015:cafe::1
 
 [config_server]
-primary = https://seesaw-config1.example.com/
-secondary = https://seesaw-config2.example.com/
-tertiary = https://seesaw-config3.example.com/
+primary = seesaw-config1.example.com
+secondary = seesaw-config2.example.com
+tertiary = seesaw-config3.example.com
 
 [interface]
 node = eth0
