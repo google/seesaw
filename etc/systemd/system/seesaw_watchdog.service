@@ -1,0 +1,21 @@
+[Unit]
+Description=Seesaw v2 watchdog
+After=syslog.target network.target
+
+[Service]
+Type=simple
+KillMode=process
+
+# The healthchecker potentially needs to open a lot of network connections.
+LimitNOFILE=8192
+LimitNPROC=8192
+
+ExecStart=/usr/local/seesaw/seesaw_watchdog
+Restart=always
+RestartSec=30
+TimeoutSec=30
+
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
