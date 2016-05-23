@@ -121,8 +121,8 @@ func main() {
 		if err != nil {
 			log.Exitf("Unable to get VRID: %v", err)
 		}
-		if id < 0 || id > 255 {
-			log.Exitf("Invalid VRID %d - must be between 0 and 255 inclusive", id)
+		if id < 1 || id > 255 {
+			log.Exitf("Invalid VRID %d - must be between 1 and 255 inclusive", id)
 		}
 		vrid = uint8(id)
 	}
