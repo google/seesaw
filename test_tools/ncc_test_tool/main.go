@@ -134,7 +134,7 @@ func lbInterface(ncc client.NCC) client.LBInterface {
 	if vip == nil {
 		log.Fatalf("Invalid cluster VIP - %q", *clusterVIPStr)
 	}
-	if *vrID < 0 || *vrID > 255 {
+	if *vrID < 1 || *vrID > 255 {
 		log.Fatalf("Invalid VRID - %q", *vrID)
 	}
 	rtID := uint8(*routingTableID)
