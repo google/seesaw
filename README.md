@@ -40,7 +40,6 @@ On a Debian/Ubuntu style system, you should be able to prepare for building
 by running:
 
     apt-get install golang
-    apt-get install protobuf-compiler
     apt-get install libnl-3-dev libnl-genl-3-dev
 
 If your distro has a go version before 1.5, you may need to fetch a newer
@@ -51,7 +50,6 @@ After setting `GOPATH` to an appropriate location (for example `~/go`):
     go get -u golang.org/x/crypto/ssh
     go get -u github.com/dlintw/goconf
     go get -u github.com/golang/glog
-    go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
     go get -u github.com/miekg/dns
     go get -u github.com/kylelemons/godebug/pretty
 
@@ -59,6 +57,16 @@ Ensure that `${GOPATH}/bin` is in your `${PATH}` and in the seesaw directory:
 
     make test
     make install
+
+If you wish to regenerate the protobuf code, the protobuf compiler and Go
+protobuf compiler generator are also needed:
+
+    apt-get install protobuf-compiler
+    go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+
+The protobuf code can then be regenerated with:
+
+    make proto
 
 ## Installing
 
