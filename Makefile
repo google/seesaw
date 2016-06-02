@@ -1,4 +1,4 @@
-all: proto
+all:
 	go build ./...
 
 install: all
