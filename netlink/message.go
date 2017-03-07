@@ -245,7 +245,7 @@ func (m *Message) SendCallback(fn CallbackFunc, arg interface{}) error {
 	cbID := registerCallback(cbArg)
 	defer unregisterCallback(cbArg)
 
-	if errno := C.nl_socket_modify_cb(s.nls, C.NL_CB_VALID, C.NL_CB_CUSTOM, (C.nl_recvmsg_msg_cb_t)(unsafe.Pointer(C.callbackGateway)), C.uintptr_t(cbID)); errno != 0 {
+	if errno := C._nl_socket_modify_cb(s.nls, C.NL_CB_VALID, C.NL_CB_CUSTOM, (C.nl_recvmsg_msg_cb_t)(unsafe.Pointer(C.callbackGateway)), C.uintptr_t(cbID)); errno != 0 {
 		return &Error{errno, "failed to modify callback"}
 	}
 	// nl_send_auto_complete returns number of bytes sent or a negative
