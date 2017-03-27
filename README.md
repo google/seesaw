@@ -24,6 +24,17 @@ four interfaces should be connected to the same layer 2 network.
 
 ## Building
 
+### automatic build inside Docker
+
+In order to build seesaw inside the docker environment, one should run following command:
+
+    hack/build.sh 
+
+as a result of execution, you will get binaries in the `_out` folder, which will be created automatically.
+
+
+### manual build
+
 Seesaw v2 is developed in Go and depends on several Go packages:
 
 - [golang.org/x/crypto/ssh](http://godoc.org/golang.org/x/crypto/ssh)
@@ -69,6 +80,8 @@ The protobuf code can then be regenerated with:
     make proto
 
 ## Installing
+
+In case you executed docker based build, your binaries are located in `_out` dir insdead of `${GOPATH}/bin`. You need to adjust paths below accordingly. 
 
 After `make install` has run successfully, there should be a number of
 binaries in `${GOPATH}/bin` with a `seesaw_` prefix. Install these to the
