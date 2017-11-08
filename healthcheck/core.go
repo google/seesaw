@@ -581,14 +581,21 @@ func (s *Server) notifier() {
 // error and giving up after MaxFailures.
 func (s *Server) send() error {
 	failures := 0
-	for err := s.sendBatch(s.batch); err != nil; {
-		log.Errorf("Send failed: %v", err)
+	for {
+		err := s.sendBatch(s.batch)
+		if err == nil {
+			break
+		}
+
 		failures++
-		if failures > s.config.MaxFailures {
+		log.Errorf("Send failed %d times: %v", failures, err)
+		if failures >= s.config.MaxFailures {
 			return fmt.Errorf("send: %d errors, giving up", failures)
 		}
+
 		time.Sleep(s.config.RetryDelay)
 	}
+
 	s.batch = s.batch[:0]
 	return nil
 }
