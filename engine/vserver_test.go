@@ -969,7 +969,7 @@ func TestVserverSnapshot(t *testing.T) {
 		t.Errorf("Snapshot name mismatch - got %s, want %s", got, want)
 	}
 	if got, want := snapshot.Enabled, expectedSnapshot.Enabled; got != want {
-		t.Errorf("Snapshot enabled mismatch - got %s, want %s", got, want)
+		t.Errorf("Snapshot enabled mismatch - got %t, want %t", got, want)
 	}
 	if got, want := snapshot.Host, expectedSnapshot.Host; !reflect.DeepEqual(got, want) {
 		t.Errorf("Snapshot vserver host mismatch - got %#v, want %#v", got, want)
