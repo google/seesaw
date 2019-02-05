@@ -146,7 +146,7 @@ func (vs *fakeVTYServer) write() {
 func newTestVTY() (*VTY, *fakeVTYServer, error) {
 	vs, err := newFakeVTYServer()
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to get VTY server: %v", err)
+		return nil, nil, fmt.Errorf("failed to get VTY server: %v", err)
 	}
 	vty := NewVTY("")
 	vty.conn = vs.clientConn

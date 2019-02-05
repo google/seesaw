@@ -326,7 +326,7 @@ func (h *healthcheckManager) newConfig(id healthcheck.Id, key checkKey, hc *conf
 		udp.Receive = hc.Receive
 		checker = udp
 	default:
-		return nil, fmt.Errorf("Unknown healthcheck type: %v", hc.Type)
+		return nil, fmt.Errorf("unknown healthcheck type: %v", hc.Type)
 	}
 
 	target.Host = host

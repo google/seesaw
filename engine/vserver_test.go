@@ -1029,12 +1029,12 @@ func checkAllDown(v *vserver) []error {
 	errs := make([]error, 0)
 	for _, svc := range v.services {
 		if svc.active {
-			errs = append(errs, fmt.Errorf("Expected service %v to be inactive", svc))
+			errs = append(errs, fmt.Errorf("expected service %v to be inactive", svc))
 		}
 	}
 	for ip, active := range v.active {
 		if active {
-			errs = append(errs, fmt.Errorf("Expected vserver IP %s to be inactive", ip))
+			errs = append(errs, fmt.Errorf("expected vserver IP %s to be inactive", ip))
 		}
 	}
 	return errs
@@ -1044,12 +1044,12 @@ func checkAllUp(v *vserver) []error {
 	errs := make([]error, 0)
 	for _, svc := range v.services {
 		if !svc.active {
-			errs = append(errs, fmt.Errorf("Expected service %v to be active", svc))
+			errs = append(errs, fmt.Errorf("expected service %v to be active", svc))
 		}
 	}
 	for ip, active := range v.active {
 		if !active {
-			errs = append(errs, fmt.Errorf("Expected vserver IP %s to be active", ip))
+			errs = append(errs, fmt.Errorf("expected vserver IP %s to be active", ip))
 		}
 	}
 	return errs
@@ -1675,16 +1675,16 @@ func applyConfig(vserver *vserver, file, clusterName, serviceName string) error 
 func compareChecks(got, want map[checkKey]*check) []error {
 	errs := make([]error, 0)
 	if len(got) != len(want) {
-		errs = append(errs, fmt.Errorf("Got %d checks, want %d", len(got), len(want)))
+		errs = append(errs, fmt.Errorf("got %d checks, want %d", len(got), len(want)))
 		return errs
 	}
 	for k := range want {
 		if _, ok := got[k]; !ok {
-			errs = append(errs, fmt.Errorf("Expected check %v, not found", k))
+			errs = append(errs, fmt.Errorf("expected check %v, not found", k))
 			continue
 		}
 		if *got[k].healthcheck != *want[k].healthcheck {
-			errs = append(errs, fmt.Errorf("Got check %#+v, want %#+v", *got[k].healthcheck, *want[k].healthcheck))
+			errs = append(errs, fmt.Errorf("got check %#+v, want %#+v", *got[k].healthcheck, *want[k].healthcheck))
 		}
 	}
 	return errs
@@ -1693,24 +1693,24 @@ func compareChecks(got, want map[checkKey]*check) []error {
 func compareServiceStates(want []*service, got map[serviceKey]*service) []error {
 	var errs []error
 	if len(got) != len(want) {
-		errs = append(errs, fmt.Errorf("Got %d services, want %d", len(got), len(want)))
+		errs = append(errs, fmt.Errorf("got %d services, want %d", len(got), len(want)))
 	}
 	for _, wantSvc := range want {
 		gotSvc, ok := got[wantSvc.serviceKey]
 		if !ok {
-			errs = append(errs, fmt.Errorf("Got service <nil>, want %v", wantSvc))
+			errs = append(errs, fmt.Errorf("got service <nil>, want %v", wantSvc))
 			continue
 		}
 		if gotSvc.ip != wantSvc.ip {
-			errs = append(errs, fmt.Errorf("Service %v.ip = %v, want %v",
+			errs = append(errs, fmt.Errorf("service %v.ip = %v, want %v",
 				gotSvc, gotSvc.ip, wantSvc.ip))
 		}
 		if gotSvc.healthy != wantSvc.healthy {
-			errs = append(errs, fmt.Errorf("Service %v.healthy = %v, want %v",
+			errs = append(errs, fmt.Errorf("service %v.healthy = %v, want %v",
 				gotSvc, gotSvc.healthy, wantSvc.healthy))
 		}
 		if gotSvc.active != wantSvc.active {
-			errs = append(errs, fmt.Errorf("Service %v.active = %v, want %v",
+			errs = append(errs, fmt.Errorf("service %v.active = %v, want %v",
 				gotSvc, gotSvc.active, wantSvc.active))
 		}
 	}

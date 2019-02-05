@@ -45,7 +45,7 @@ func newEngineIPC(ctx *ipc.Context) EngineConn {
 func (c *engineIPC) Dial(addr string) error {
 	client, err := rpc.Dial("unix", addr)
 	if err != nil {
-		return fmt.Errorf("Dial failed: %v", err)
+		return fmt.Errorf("dial failed: %v", err)
 	}
 	c.client = client
 	return nil
@@ -54,10 +54,10 @@ func (c *engineIPC) Dial(addr string) error {
 // Close closes an existing connection to the Seesaw Engine.
 func (c *engineIPC) Close() error {
 	if c.client == nil {
-		return fmt.Errorf("No client to close")
+		return fmt.Errorf("no client to close")
 	}
 	if err := c.client.Close(); err != nil {
-		return fmt.Errorf("Close failed: %v", err)
+		return fmt.Errorf("close failed: %v", err)
 	}
 	c.client = nil
 	return nil

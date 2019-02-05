@@ -44,7 +44,7 @@ var (
 // validateInterface validates the name of a network interface.
 func validateInterface(iface *net.Interface) error {
 	if !ifaceNameRegexp.MatchString(iface.Name) {
-		return fmt.Errorf("Invalid interface name %q", iface.Name)
+		return fmt.Errorf("invalid interface name %q", iface.Name)
 	}
 	return nil
 }
@@ -58,7 +58,7 @@ func ipRunOutput(cmd string, args ...interface{}) (string, error) {
 	ip := exec.Command(ipCmd, ipArgs...)
 	out, err := ip.Output()
 	if err != nil {
-		return "", fmt.Errorf("IP run %q: %v", cmdStr, err)
+		return "", fmt.Errorf("iP run %q: %v", cmdStr, err)
 	}
 	return string(out), nil
 }
@@ -78,7 +78,7 @@ func ipRunAFOutput(family seesaw.AF, cmd string, args ...interface{}) (string, e
 	case seesaw.IPv6:
 		cmd = fmt.Sprintf("-f inet6 %s", cmd)
 	default:
-		return "", fmt.Errorf("Unknown address family %s", family)
+		return "", fmt.Errorf("unknown address family %s", family)
 	}
 	return ipRunOutput(cmd, args...)
 }
@@ -165,7 +165,7 @@ func ifaceAddIPAddr(iface *net.Interface, ip net.IP, mask net.IPMask) error {
 // ifaceAddIPv4Addr adds the given IPv4 address to the network interface.
 func ifaceAddIPv4Addr(iface *net.Interface, ip net.IP, mask net.IPMask) error {
 	if ip.To4() == nil {
-		return fmt.Errorf("IP %v is not a valid IPv4 address", ip)
+		return fmt.Errorf("iP %v is not a valid IPv4 address", ip)
 	}
 	brd := make(net.IP, net.IPv4len)
 	copy(brd, ip.To4())
@@ -198,26 +198,26 @@ func ifaceAddVLAN(iface *net.Interface, vlan *seesaw.VLAN) error {
 	name := fmt.Sprintf("%s.%d", iface.Name, vlan.ID)
 	err := ipRunIface(iface, "link add link %s name %s type vlan id %d", iface.Name, name, vlan.ID)
 	if err != nil {
-		return fmt.Errorf("Failed to create VLAN interface %q: %v", name, err)
+		return fmt.Errorf("failed to create VLAN interface %q: %v", name, err)
 	}
 
 	vlanIface, err := net.InterfaceByName(name)
 	if err != nil {
-		return fmt.Errorf("Failed to find newly created VLAN interface %q: %v", name, err)
+		return fmt.Errorf("failed to find newly created VLAN interface %q: %v", name, err)
 	}
 
 	if err := sysctlInitIface(vlanIface.Name); err != nil {
-		return fmt.Errorf("Failed to initialise sysctls for VLAN interface %q: %v", name, err)
+		return fmt.Errorf("failed to initialise sysctls for VLAN interface %q: %v", name, err)
 	}
 
 	if vlan.IPv4Addr != nil {
 		if err := ifaceAddIPv4Addr(vlanIface, vlan.IPv4Addr, vlan.IPv4Mask); err != nil {
-			return fmt.Errorf("Failed to add %v to VLAN interface %q", vlan.IPv4Addr, name)
+			return fmt.Errorf("failed to add %v to VLAN interface %q", vlan.IPv4Addr, name)
 		}
 	}
 	if vlan.IPv6Addr != nil {
 		if err := ifaceAddIPv6Addr(vlanIface, vlan.IPv6Addr, vlan.IPv6Mask); err != nil {
-			return fmt.Errorf("Failed to add %v to VLAN interface %q", vlan.IPv6Addr, name)
+			return fmt.Errorf("failed to add %v to VLAN interface %q", vlan.IPv6Addr, name)
 		}
 	}
 
@@ -232,7 +232,7 @@ func ifaceDelVLAN(iface *net.Interface, vlan *seesaw.VLAN) error {
 	name := fmt.Sprintf("%s.%d", iface.Name, vlan.ID)
 	vlanIface, err := net.InterfaceByName(name)
 	if err != nil {
-		return fmt.Errorf("Failed to find VLAN interface %q: %v", name, err)
+		return fmt.Errorf("failed to find VLAN interface %q: %v", name, err)
 	}
 	return ipRunIface(vlanIface, "link del dev %s", vlanIface.Name)
 }
@@ -249,7 +249,7 @@ func ifaceFlushVLANs(iface *net.Interface) error {
 	}
 	for _, vlanIface := range vlanIfaces {
 		if err := ipRunIface(vlanIface, "link del dev %s", vlanIface.Name); err != nil {
-			return fmt.Errorf("Failed to remove %s from %s: %v", vlanIface.Name, iface.Name, err)
+			return fmt.Errorf("failed to remove %s from %s: %v", vlanIface.Name, iface.Name, err)
 		}
 	}
 	return nil
@@ -264,7 +264,7 @@ func routeDefaultIPv4() (net.IP, error) {
 	if dr := routeDefaultIPv4Regexp.FindStringSubmatch(out); dr != nil {
 		return net.ParseIP(dr[1]).To4(), nil
 	}
-	return nil, fmt.Errorf("Default route not found")
+	return nil, fmt.Errorf("default route not found")
 }
 
 // removeRoutes deletes the routing table entries for a VIP, from the specified

@@ -161,7 +161,7 @@ func (nc *nccClient) call(name string, in interface{}, out interface{}) error {
 	client := nc.client
 	nc.lock.RUnlock()
 	if client == nil {
-		return fmt.Errorf("Not connected")
+		return fmt.Errorf("not connected")
 	}
 	ch := make(chan error, 1)
 	go func() {
@@ -171,7 +171,7 @@ func (nc *nccClient) call(name string, in interface{}, out interface{}) error {
 	case err := <-ch:
 		return err
 	case <-time.After(nccRPCTimeout):
-		return fmt.Errorf("RPC call timed out after %v", nccRPCTimeout)
+		return fmt.Errorf("rPC call timed out after %v", nccRPCTimeout)
 	}
 }
 
@@ -191,7 +191,7 @@ func (nc *nccClient) Dial() error {
 		}
 		time.Sleep(time.Duration(i) * nccRetryDelay)
 	}
-	return fmt.Errorf("Failed to establish connection: %v", err)
+	return fmt.Errorf("failed to establish connection: %v", err)
 }
 
 func (nc *nccClient) Close() error {
@@ -205,7 +205,7 @@ func (nc *nccClient) Close() error {
 		return nil
 	}
 	if err := nc.client.Close(); err != nil {
-		return fmt.Errorf("Failed to close connection: %v", err)
+		return fmt.Errorf("failed to close connection: %v", err)
 	}
 	nc.client = nil
 	return nil

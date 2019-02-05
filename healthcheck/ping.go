@@ -191,7 +191,7 @@ func exchangeICMPEcho(network string, ip net.IP, timeout time.Duration, echo icm
 		if reply[0] == ICMP4_ECHO_REPLY {
 			cs := icmpChecksum(reply)
 			if cs != 0 {
-				return fmt.Errorf("Bad ICMP checksum: %x", rchksum)
+				return fmt.Errorf("bad ICMP checksum: %x", rchksum)
 			}
 		}
 		// TODO(angusc): Validate checksum for IPv6

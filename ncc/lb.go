@@ -36,20 +36,20 @@ const vrrpMAC = "00:00:5E:00:01:00"
 func (ncc *SeesawNCC) LBInterfaceInit(iface *ncctypes.LBInterface, out *int) error {
 	netIface, err := iface.Interface()
 	if err != nil {
-		return fmt.Errorf("Failed to get network interface: %v", err)
+		return fmt.Errorf("failed to get network interface: %v", err)
 	}
 	nodeIface, err := net.InterfaceByName(iface.NodeInterface)
 	if err != nil {
-		return fmt.Errorf("Failed to get node interface: %v", err)
+		return fmt.Errorf("failed to get node interface: %v", err)
 	}
 
 	if iface.RoutingTableID < 1 || iface.RoutingTableID > 250 {
-		return fmt.Errorf("Invalid routing table ID: %d", iface.RoutingTableID)
+		return fmt.Errorf("invalid routing table ID: %d", iface.RoutingTableID)
 	}
 
 	vmac, err := net.ParseMAC(vrrpMAC)
 	if err != nil {
-		return fmt.Errorf("Failed to parse VRRP MAC %q: %v", vrrpMAC, err)
+		return fmt.Errorf("failed to parse VRRP MAC %q: %v", vrrpMAC, err)
 	}
 
 	// The last byte of the VRRP MAC is determined by the VRID.
@@ -60,35 +60,35 @@ func (ncc *SeesawNCC) LBInterfaceInit(iface *ncctypes.LBInterface, out *int) err
 
 	// Ensure interface is down and set VMAC address.
 	if err := ifaceFastDown(netIface); err != nil {
-		return fmt.Errorf("Failed to down interface: %v", err)
+		return fmt.Errorf("failed to down interface: %v", err)
 	}
 	if err := ifaceSetMAC(netIface); err != nil {
-		return fmt.Errorf("Failed to set MAC: %v", err)
+		return fmt.Errorf("failed to set MAC: %v", err)
 	}
 
 	// Remove VLAN interfaces associated with the load balancing interface.
 	if err := ifaceFlushVLANs(netIface); err != nil {
-		return fmt.Errorf("Failed to flush VLAN interfaces: %v", err)
+		return fmt.Errorf("failed to flush VLAN interfaces: %v", err)
 	}
 
 	// Configure sysctls for load balancing.
 	if err := sysctlInitLB(nodeIface, netIface); err != nil {
-		return fmt.Errorf("Failed to initialise sysctls: %v", err)
+		return fmt.Errorf("failed to initialise sysctls: %v", err)
 	}
 
 	// Flush existing IP addresses and add cluster VIPs.
 	if err := ifaceFlushIPAddr(netIface); err != nil {
-		return fmt.Errorf("Failed to flush IP addresses: %v", err)
+		return fmt.Errorf("failed to flush IP addresses: %v", err)
 	}
 
 	if iface.ClusterVIP.IPv4Addr != nil {
 		if err := addClusterVIP(iface, netIface, nodeIface, iface.ClusterVIP.IPv4Addr); err != nil {
-			return fmt.Errorf("Failed to add IPv4 cluster VIP: %v", err)
+			return fmt.Errorf("failed to add IPv4 cluster VIP: %v", err)
 		}
 	}
 	if iface.ClusterVIP.IPv6Addr != nil {
 		if err := addClusterVIP(iface, netIface, nodeIface, iface.ClusterVIP.IPv6Addr); err != nil {
-			return fmt.Errorf("Failed to add IPv6 cluster VIP: %v", err)
+			return fmt.Errorf("failed to add IPv6 cluster VIP: %v", err)
 		}
 	}
 
@@ -100,16 +100,16 @@ func (ncc *SeesawNCC) LBInterfaceInit(iface *ncctypes.LBInterface, out *int) err
 	// Setup dummy interface.
 	dummyIface, err := net.InterfaceByName(iface.DummyInterface)
 	if err != nil {
-		return fmt.Errorf("Failed to get dummy interface: %v", err)
+		return fmt.Errorf("failed to get dummy interface: %v", err)
 	}
 	if err := ifaceFastDown(dummyIface); err != nil {
-		return fmt.Errorf("Failed to down dummy interface: %v", err)
+		return fmt.Errorf("failed to down dummy interface: %v", err)
 	}
 	if err := ifaceFlushIPAddr(dummyIface); err != nil {
-		return fmt.Errorf("Failed to flush dummy interface: %v", err)
+		return fmt.Errorf("failed to flush dummy interface: %v", err)
 	}
 	if err := ifaceUp(dummyIface); err != nil {
-		return fmt.Errorf("Failed to up dummy interface: %v", err)
+		return fmt.Errorf("failed to up dummy interface: %v", err)
 	}
 
 	return nil
@@ -125,7 +125,7 @@ func addClusterVIP(iface *ncctypes.LBInterface, netIface, nodeIface *net.Interfa
 		family = seesaw.IPv6
 	}
 	if nodeIP == nil {
-		return fmt.Errorf("Node does not have an %s address", family)
+		return fmt.Errorf("node does not have an %s address", family)
 	}
 
 	log.Infof("Adding %s cluster VIP %s on %s", family, clusterVIP, iface.Name)
@@ -134,10 +134,10 @@ func addClusterVIP(iface *ncctypes.LBInterface, netIface, nodeIface *net.Interfa
 	// contained within this network.
 	nodeNet, err := findNetwork(nodeIface, nodeIP)
 	if err != nil {
-		return fmt.Errorf("Failed to get node network: %v", err)
+		return fmt.Errorf("failed to get node network: %v", err)
 	}
 	if !nodeNet.Contains(clusterVIP) {
-		return fmt.Errorf("Node network %s does not contain cluster VIP %s", nodeNet, clusterVIP)
+		return fmt.Errorf("node network %s does not contain cluster VIP %s", nodeNet, clusterVIP)
 	}
 
 	// Set up routing policy for IPv4.  These rules and the associated routes
@@ -155,16 +155,16 @@ func addClusterVIP(iface *ncctypes.LBInterface, netIface, nodeIface *net.Interfa
 		ipRunAF(family, "rule del to %s", clusterVIP)
 		ipRunAF(family, "rule del from %s", clusterVIP)
 		if err := ipRunAF(family, "rule add from all to %s lookup %d", clusterVIP, iface.RoutingTableID); err != nil {
-			return fmt.Errorf("Failed to set up routing policy: %v", err)
+			return fmt.Errorf("failed to set up routing policy: %v", err)
 		}
 		if err := ipRunAF(family, "rule add from %s lookup %d", clusterVIP, iface.RoutingTableID); err != nil {
-			return fmt.Errorf("Failed to set up routing policy: %v", err)
+			return fmt.Errorf("failed to set up routing policy: %v", err)
 		}
 	}
 
 	// Add cluster VIP to interface.
 	if err := ifaceAddIPAddr(netIface, clusterVIP, nodeNet.Mask); err != nil {
-		return fmt.Errorf("Failed to add cluster VIP to interface: %v", err)
+		return fmt.Errorf("failed to add cluster VIP to interface: %v", err)
 	}
 
 	return nil
@@ -189,34 +189,34 @@ func (ncc *SeesawNCC) LBInterfaceUp(iface *ncctypes.LBInterface, out *int) error
 	}
 	nodeIface, err := net.InterfaceByName(iface.NodeInterface)
 	if err != nil {
-		return fmt.Errorf("Failed to get node interface: %v", err)
+		return fmt.Errorf("failed to get node interface: %v", err)
 	}
 	nodeNet, err := findNetwork(nodeIface, iface.Node.IPv4Addr)
 	if err != nil {
-		return fmt.Errorf("Failed to get node network: %v", err)
+		return fmt.Errorf("failed to get node network: %v", err)
 	}
 
 	log.Infof("Bringing up LB interface %s on %s", nodeNet, iface.Name)
 
 	if !nodeNet.Contains(iface.ClusterVIP.IPv4Addr) {
-		return fmt.Errorf("Node network %s does not contain cluster VIP %s", nodeNet, iface.ClusterVIP.IPv4Addr)
+		return fmt.Errorf("node network %s does not contain cluster VIP %s", nodeNet, iface.ClusterVIP.IPv4Addr)
 	}
 
 	gateway, err := routeDefaultIPv4()
 	if err != nil {
-		return fmt.Errorf("Failed to get IPv4 default route: %v", err)
+		return fmt.Errorf("failed to get IPv4 default route: %v", err)
 	}
 
 	if err := ifaceUp(netIface); err != nil {
-		return fmt.Errorf("Failed to bring interface up: %v", err)
+		return fmt.Errorf("failed to bring interface up: %v", err)
 	}
 
 	// Configure routing.
 	if err := ipRunIface(netIface, "route add %s dev %s table %d", nodeNet, iface.Name, iface.RoutingTableID); err != nil {
-		return fmt.Errorf("Failed to configure routing: %v", err)
+		return fmt.Errorf("failed to configure routing: %v", err)
 	}
 	if err := ipRunIface(netIface, "route add 0/0 via %s dev %s table %d", gateway, iface.Name, iface.RoutingTableID); err != nil {
-		return fmt.Errorf("Failed to configure routing: %v", err)
+		return fmt.Errorf("failed to configure routing: %v", err)
 	}
 
 	return nil
@@ -242,7 +242,7 @@ func (ncc *SeesawNCC) LBInterfaceAddVIP(vip *ncctypes.LBInterfaceVIP, out *int) 
 		}
 		iface, network, err := selectInterfaceNetwork(netIface, vip.IP.IP())
 		if err != nil {
-			return fmt.Errorf("Failed to select interface and network for %v: %v", vip.VIP, err)
+			return fmt.Errorf("failed to select interface and network for %v: %v", vip.VIP, err)
 		}
 		log.Infof("Adding VIP %s to %s", vip.IP.IP(), iface.Name)
 		if err := ifaceAddIPAddr(iface, vip.IP.IP(), network.Mask); err != nil {
@@ -252,7 +252,7 @@ func (ncc *SeesawNCC) LBInterfaceAddVIP(vip *ncctypes.LBInterfaceVIP, out *int) 
 	case seesaw.AnycastVIP, seesaw.DedicatedVIP:
 		dummyIface, err := net.InterfaceByName(vip.Iface.DummyInterface)
 		if err != nil {
-			return fmt.Errorf("Failed to find dummy interface: %v", err)
+			return fmt.Errorf("failed to find dummy interface: %v", err)
 		}
 		prefixLen := net.IPv6len * 8
 		if vip.IP.IP().To4() != nil {
@@ -265,7 +265,7 @@ func (ncc *SeesawNCC) LBInterfaceAddVIP(vip *ncctypes.LBInterfaceVIP, out *int) 
 		}
 		return routeLocal(dummyIface, vip.IP.IP(), vip.Iface.Node)
 	default:
-		return fmt.Errorf("Unknown VIPType for %v: %v", vip.VIP, vip.Type)
+		return fmt.Errorf("unknown VIPType for %v: %v", vip.VIP, vip.Type)
 	}
 }
 
@@ -280,11 +280,11 @@ func (ncc *SeesawNCC) LBInterfaceDeleteVIP(vip *ncctypes.LBInterfaceVIP, out *in
 		}
 		iface, network, err := findInterfaceNetwork(netIface, vip.IP.IP())
 		if err != nil {
-			return fmt.Errorf("Failed to find interface and network for %v: %v", vip.VIP, err)
+			return fmt.Errorf("failed to find interface and network for %v: %v", vip.VIP, err)
 		}
 		log.Infof("Removing VIP %s from %s", vip.IP.IP(), iface.Name)
 		if err := ifaceDelIPAddr(iface, vip.IP.IP(), network.Mask); err != nil {
-			return fmt.Errorf("Failed to delete VIP %s: %v", vip.VIP, err)
+			return fmt.Errorf("failed to delete VIP %s: %v", vip.VIP, err)
 		}
 		if err := removeLocalRoutes(vip.IP.IP()); err != nil {
 			log.Infof("Failed to remove local routes for VIP %s: %v", vip.VIP, err)
@@ -296,7 +296,7 @@ func (ncc *SeesawNCC) LBInterfaceDeleteVIP(vip *ncctypes.LBInterfaceVIP, out *in
 	case seesaw.AnycastVIP, seesaw.DedicatedVIP:
 		dummyIface, err := net.InterfaceByName(vip.Iface.DummyInterface)
 		if err != nil {
-			return fmt.Errorf("Failed to find dummy interface: %v", err)
+			return fmt.Errorf("failed to find dummy interface: %v", err)
 		}
 		prefixLen := net.IPv6len * 8
 		if vip.IP.IP().To4() != nil {
@@ -306,7 +306,7 @@ func (ncc *SeesawNCC) LBInterfaceDeleteVIP(vip *ncctypes.LBInterfaceVIP, out *in
 
 		log.Infof("Removing VIP %s from %s", vip.IP.IP(), dummyIface.Name)
 		if err = ifaceDelIPAddr(dummyIface, vip.IP.IP(), mask); err != nil {
-			return fmt.Errorf("Failed to delete VIP %s: %v", vip.VIP, err)
+			return fmt.Errorf("failed to delete VIP %s: %v", vip.VIP, err)
 		}
 
 		// Workaround for kernel bug(?). The route should have been removed when
@@ -320,7 +320,7 @@ func (ncc *SeesawNCC) LBInterfaceDeleteVIP(vip *ncctypes.LBInterfaceVIP, out *in
 		}
 		return nil
 	default:
-		return fmt.Errorf("Unknown VIPType for %v: %v", vip.VIP, vip.VIP.Type)
+		return fmt.Errorf("unknown VIPType for %v: %v", vip.VIP, vip.VIP.Type)
 	}
 
 }
@@ -374,7 +374,7 @@ func findInterfaceNetwork(pIface *net.Interface, ip net.IP) (*net.Interface, *ne
 			return iface, network, nil
 		}
 	}
-	return nil, nil, fmt.Errorf("Failed to find IP %v on any interface", ip)
+	return nil, nil, fmt.Errorf("failed to find IP %v on any interface", ip)
 }
 
 // findNetwork returns the network for the given IP address on the given
@@ -383,19 +383,19 @@ func findInterfaceNetwork(pIface *net.Interface, ip net.IP) (*net.Interface, *ne
 func findNetwork(iface *net.Interface, ip net.IP) (*net.IPNet, error) {
 	addrs, err := iface.Addrs()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get addresses for interface %q: %v", iface.Name, err)
+		return nil, fmt.Errorf("failed to get addresses for interface %q: %v", iface.Name, err)
 	}
 	for _, addr := range addrs {
 		ipStr := addr.String()
 		ipAddr, ipNet, err := net.ParseCIDR(ipStr)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse interface address %q - %v: %v", iface.Name, ipStr, err)
+			return nil, fmt.Errorf("failed to parse interface address %q - %v: %v", iface.Name, ipStr, err)
 		}
 		if ipAddr.Equal(ip) {
 			return ipNet, nil
 		}
 	}
-	return nil, fmt.Errorf("Failed to find IP %v on interface %q", ip, iface.Name)
+	return nil, fmt.Errorf("failed to find IP %v on interface %q", ip, iface.Name)
 }
 
 // selectInterfaceNetwork attempts to find the interface that is configured
@@ -417,7 +417,7 @@ func selectInterfaceNetwork(pIface *net.Interface, ip net.IP) (*net.Interface, *
 			return iface, network, nil
 		}
 	}
-	return nil, nil, fmt.Errorf("Failed to find a suitable interface for IP %v", ip)
+	return nil, nil, fmt.Errorf("failed to find a suitable interface for IP %v", ip)
 }
 
 // selectNetwork attempts to find a network that contains the given IP address
@@ -426,13 +426,13 @@ func selectInterfaceNetwork(pIface *net.Interface, ip net.IP) (*net.Interface, *
 func selectNetwork(iface *net.Interface, ip net.IP) (*net.IPNet, error) {
 	addrs, err := iface.Addrs()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get addresses for interface %q: %v", iface.Name, err)
+		return nil, fmt.Errorf("failed to get addresses for interface %q: %v", iface.Name, err)
 	}
 	for _, addr := range addrs {
 		ipStr := addr.String()
 		_, ipNet, err := net.ParseCIDR(ipStr)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse interface address %q - %v: %v", iface.Name, ipStr, err)
+			return nil, fmt.Errorf("failed to parse interface address %q - %v: %v", iface.Name, ipStr, err)
 		}
 		if ipNet.Contains(ip) {
 			return ipNet, nil

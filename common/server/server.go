@@ -76,7 +76,7 @@ func RemoveUnixSocket(socket string) error {
 		c, err := net.DialTimeout("unix", socket, 5*time.Second)
 		if err == nil {
 			c.Close()
-			return fmt.Errorf("Socket %v is in use", socket)
+			return fmt.Errorf("socket %v is in use", socket)
 		}
 		log.Infof("Removing stale socket %v", socket)
 		return os.Remove(socket)
@@ -89,16 +89,16 @@ func RemoveUnixSocket(socket string) error {
 func ServerRunDirectory(server string, owner, group int) error {
 	serverRunDir := path.Join(seesaw.RunPath, server)
 	if err := os.MkdirAll(seesaw.RunPath, 0755); err != nil {
-		return fmt.Errorf("Failed to make run directory: %v", err)
+		return fmt.Errorf("failed to make run directory: %v", err)
 	}
 	if err := os.MkdirAll(serverRunDir, 0700); err != nil {
-		return fmt.Errorf("Failed to make run directory: %v", err)
+		return fmt.Errorf("failed to make run directory: %v", err)
 	}
 	if err := os.Chown(serverRunDir, owner, group); err != nil {
-		return fmt.Errorf("Failed to change ownership on run directory: %v", err)
+		return fmt.Errorf("failed to change ownership on run directory: %v", err)
 	}
 	if err := os.Chmod(serverRunDir, 0770); err != nil {
-		return fmt.Errorf("Failed to change permissions on run directory: %v", err)
+		return fmt.Errorf("failed to change permissions on run directory: %v", err)
 	}
 	return nil
 }

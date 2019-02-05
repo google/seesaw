@@ -306,7 +306,7 @@ func (s *SeesawEngine) BGPNeighbors(ctx *ipc.Context, reply *quagga.Neighbors) e
 	}
 
 	if reply == nil {
-		return fmt.Errorf("Neighbors is nil")
+		return fmt.Errorf("neighbors is nil")
 	}
 	s.engine.bgpManager.lock.RLock()
 	reply.Neighbors = s.engine.bgpManager.neighbors
@@ -349,7 +349,7 @@ func (s *SeesawEngine) Vservers(ctx *ipc.Context, reply *seesaw.VserverMap) erro
 	}
 
 	if reply == nil {
-		return fmt.Errorf("VserverMap is nil")
+		return fmt.Errorf("vserverMap is nil")
 	}
 	reply.Vservers = make(map[string]*seesaw.Vserver)
 	s.engine.vserverLock.RLock()
@@ -438,5 +438,5 @@ func (s *SeesawEngine) Backends(ctx *ipc.Context, reply *int) error {
 	}
 
 	// TODO(jsing): Implement this function.
-	return fmt.Errorf("Unimplemented")
+	return fmt.Errorf("unimplemented")
 }

@@ -22,7 +22,7 @@ import (
 
 func configReload(cli *SeesawCLI, args []string) error {
 	if err := cli.seesaw.ConfigReload(); err != nil {
-		return fmt.Errorf("Config reload failed: %v", err)
+		return fmt.Errorf("config reload failed: %v", err)
 	}
 	fmt.Println("Configuration reload requested.")
 	return nil
@@ -31,7 +31,7 @@ func configReload(cli *SeesawCLI, args []string) error {
 func configSource(cli *SeesawCLI, args []string) error {
 	// TODO(jsing): Move this up to the command handling level.
 	if len(args) > 1 {
-		return fmt.Errorf("Unexpected arguments")
+		return fmt.Errorf("unexpected arguments")
 	}
 	source := ""
 	if len(args) == 1 {
@@ -39,7 +39,7 @@ func configSource(cli *SeesawCLI, args []string) error {
 	}
 	oldSource, err := cli.seesaw.ConfigSource(source)
 	if err != nil {
-		return fmt.Errorf("Failed to change config source: %v", err)
+		return fmt.Errorf("failed to change config source: %v", err)
 	}
 	if source == "" {
 		fmt.Printf("Config source is %s\n", oldSource)
@@ -51,7 +51,7 @@ func configSource(cli *SeesawCLI, args []string) error {
 
 func failover(cli *SeesawCLI, args []string) error {
 	if err := cli.seesaw.Failover(); err != nil {
-		return fmt.Errorf("Failover request failed: %v", err)
+		return fmt.Errorf("failover request failed: %v", err)
 	}
 	fmt.Println("Failover requested.")
 	return nil

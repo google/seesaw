@@ -267,10 +267,10 @@ func iptablesRules(v *seesaw.Vserver, clusterVIP seesaw.Host, af seesaw.AF) ([]*
 		serviceIP = v.IPv6Addr
 	}
 	if clusterIP == nil {
-		return nil, fmt.Errorf("Seesaw Cluster VIP does not have an %s address", af)
+		return nil, fmt.Errorf("seesaw Cluster VIP does not have an %s address", af)
 	}
 	if serviceIP == nil {
-		return nil, fmt.Errorf("Service VIP does not have an %s address", af)
+		return nil, fmt.Errorf("service VIP does not have an %s address", af)
 	}
 
 	executers := make([]*iptTemplateExecuter, 0)

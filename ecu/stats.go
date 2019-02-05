@@ -105,16 +105,16 @@ func (e *ecuStats) update() error {
 	ctx := ipc.NewTrustedContext(seesaw.SCECU)
 	seesawConn, err := conn.NewSeesawIPC(ctx)
 	if err != nil {
-		return fmt.Errorf("Failed to connect to engine: %v", err)
+		return fmt.Errorf("failed to connect to engine: %v", err)
 	}
 	if err := seesawConn.Dial(e.ecu.cfg.EngineSocket); err != nil {
-		return fmt.Errorf("Failed to connect to engine: %v", err)
+		return fmt.Errorf("failed to connect to engine: %v", err)
 	}
 	defer seesawConn.Close()
 
 	clusterStatus, err := seesawConn.ClusterStatus()
 	if err != nil {
-		return fmt.Errorf("Failed to get cluster status: %v", err)
+		return fmt.Errorf("failed to get cluster status: %v", err)
 	}
 	e.stats.lock.Lock()
 	e.stats.ClusterStatus = *clusterStatus
@@ -122,7 +122,7 @@ func (e *ecuStats) update() error {
 
 	configStatus, err := seesawConn.ConfigStatus()
 	if err != nil {
-		return fmt.Errorf("Failed to get config status: %v", err)
+		return fmt.Errorf("failed to get config status: %v", err)
 	}
 	e.stats.lock.Lock()
 	e.stats.ConfigStatus = *configStatus
@@ -130,7 +130,7 @@ func (e *ecuStats) update() error {
 
 	ha, err := seesawConn.HAStatus()
 	if err != nil {
-		return fmt.Errorf("Failed to get HA status: %v", err)
+		return fmt.Errorf("failed to get HA status: %v", err)
 	}
 	e.stats.lock.Lock()
 	e.stats.HAStatus = *ha
@@ -138,7 +138,7 @@ func (e *ecuStats) update() error {
 
 	neighbors, err := seesawConn.BGPNeighbors()
 	if err != nil {
-		return fmt.Errorf("Failed to get BGP neighbors: %v", err)
+		return fmt.Errorf("failed to get BGP neighbors: %v", err)
 	}
 	e.stats.lock.Lock()
 	e.stats.neighbors = neighbors
@@ -146,7 +146,7 @@ func (e *ecuStats) update() error {
 
 	vlans, err := seesawConn.VLANs()
 	if err != nil {
-		return fmt.Errorf("Failed to get VLANs: %v", err)
+		return fmt.Errorf("failed to get VLANs: %v", err)
 	}
 	e.stats.lock.Lock()
 	e.stats.vlans = vlans.VLANs
@@ -154,7 +154,7 @@ func (e *ecuStats) update() error {
 
 	vservers, err := seesawConn.Vservers()
 	if err != nil {
-		return fmt.Errorf("Failed to get vservers: %v", err)
+		return fmt.Errorf("failed to get vservers: %v", err)
 	}
 	e.stats.lock.Lock()
 	e.stats.vservers = vservers

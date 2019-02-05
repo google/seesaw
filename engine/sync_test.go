@@ -74,7 +74,7 @@ func (tsd *testNoteDispatcher) nextNote() (*SyncNote, error) {
 func newSyncTest() (ln *net.TCPListener, client *syncClient, server *syncServer, dispatcher *testNoteDispatcher, err error) {
 	ln, addr, err := newLocalTCPListener("tcp4")
 	if err != nil {
-		err = fmt.Errorf("Failed to create local TCP listener: %v", err)
+		err = fmt.Errorf("failed to create local TCP listener: %v", err)
 		return
 	}
 

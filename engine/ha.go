@@ -92,14 +92,14 @@ func (h *haManager) requestFailover(peer bool) error {
 		h.failoverLock.Lock()
 		defer h.failoverLock.Unlock()
 		if h.failoverPending {
-			return fmt.Errorf("Failover request already pending")
+			return fmt.Errorf("failover request already pending")
 		}
 		h.failoverPending = true
 		return nil
 	}
 
 	if peer {
-		return fmt.Errorf("Node is not master (current state is %v)", state)
+		return fmt.Errorf("node is not master (current state is %v)", state)
 	}
 
 	if err := h.engine.syncClient.failover(); err != nil {

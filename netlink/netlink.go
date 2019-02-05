@@ -430,7 +430,7 @@ func unmarshal(v reflect.Value, field string, params *fieldParams, attrs map[uin
 	case netIPType:
 		ip := net.IP(C.GoBytes(unsafe.Pointer(C.nla_data(attr.nla)), C.int(attr.nla.nla_len)))
 		if len(ip) < net.IPv6len {
-			return fmt.Errorf("IP address attribute for field %s is %d bytes (want at least %d)", field, len(ip), net.IPv6len)
+			return fmt.Errorf("iP address attribute for field %s is %d bytes (want at least %d)", field, len(ip), net.IPv6len)
 		}
 		ip = ip[:net.IPv6len]
 		if bytes.Equal(ip[net.IPv4len:], make([]byte, net.IPv6len-net.IPv4len)) {

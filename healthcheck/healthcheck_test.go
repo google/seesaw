@@ -35,7 +35,7 @@ func newLocalTCPListener(n string) (*net.TCPListener, *net.TCPAddr, error) {
 	case "tcp6":
 		addr = "[::1]:0"
 	default:
-		return nil, nil, fmt.Errorf("Unknown network %q", n)
+		return nil, nil, fmt.Errorf("unknown network %q", n)
 	}
 
 	tcpAddr, err := net.ResolveTCPAddr(n, addr)
@@ -59,7 +59,7 @@ func newLocalUDPConn(n string) (*net.UDPConn, *net.UDPAddr, error) {
 	case "udp6":
 		addr = "[::1]:0"
 	default:
-		return nil, nil, fmt.Errorf("Unknown network %q", n)
+		return nil, nil, fmt.Errorf("unknown network %q", n)
 	}
 
 	udpAddr, err := net.ResolveUDPAddr(n, addr)

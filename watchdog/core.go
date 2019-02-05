@@ -52,7 +52,7 @@ func (w *Watchdog) Shutdown() {
 // AddService adds a service that is to be run by the watchdog.
 func (w *Watchdog) AddService(name, binary string) (*Service, error) {
 	if _, ok := w.services[name]; ok {
-		return nil, fmt.Errorf("Service %q already exists", name)
+		return nil, fmt.Errorf("service %q already exists", name)
 	}
 
 	svc := newService(name, binary)

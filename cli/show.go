@@ -38,7 +38,7 @@ const (
 func showBGPNeighbors(cli *SeesawCLI, args []string) error {
 	neighbors, err := cli.seesaw.BGPNeighbors()
 	if err != nil {
-		return fmt.Errorf("Failed to get BGP neighbors: %v", err)
+		return fmt.Errorf("failed to get BGP neighbors: %v", err)
 	}
 
 	if len(args) == 0 {
@@ -59,7 +59,7 @@ func showBGPNeighbors(cli *SeesawCLI, args []string) error {
 			}
 		}
 		if n == nil {
-			return fmt.Errorf("No such neighbor")
+			return fmt.Errorf("no such neighbor")
 		}
 		printHdr("BGP Neighbor")
 		printVal("IP Address:", n.IP)
@@ -69,7 +69,7 @@ func showBGPNeighbors(cli *SeesawCLI, args []string) error {
 		printVal("BGP State:", n.BGPState)
 		printVal("Duration:", n.Uptime)
 	} else {
-		return fmt.Errorf("Too many arguments")
+		return fmt.Errorf("too many arguments")
 	}
 	return nil
 }
@@ -106,7 +106,7 @@ func showVLANs(cli *SeesawCLI, args []string) error {
 			}
 		}
 		if vlan == nil {
-			return fmt.Errorf("VLAN ID %d not found", id)
+			return fmt.Errorf("vLAN ID %d not found", id)
 		}
 	} else if ip := net.ParseIP(args[0]); ip != nil {
 		// By IP
@@ -117,7 +117,7 @@ func showVLANs(cli *SeesawCLI, args []string) error {
 			}
 		}
 		if vlan == nil {
-			return fmt.Errorf("VLAN not found for IP address %v", ip)
+			return fmt.Errorf("vLAN not found for IP address %v", ip)
 		}
 	} else {
 		return fmt.Errorf("unknown value %q - must be a VLAN ID or IP address", args[0])
@@ -139,7 +139,7 @@ func showVLANs(cli *SeesawCLI, args []string) error {
 func showHAStatus(cli *SeesawCLI, args []string) error {
 	ha, err := cli.seesaw.HAStatus()
 	if err != nil {
-		return fmt.Errorf("HA status: %v\n", err)
+		return fmt.Errorf("hA status: %v\n", err)
 	}
 
 	durationStr := "N/A"
@@ -163,7 +163,7 @@ func showHAStatus(cli *SeesawCLI, args []string) error {
 func configStatus(cli *SeesawCLI, args []string) error {
 	cs, err := cli.seesaw.ConfigStatus()
 	if err != nil {
-		return fmt.Errorf("Failed to get config status: %v", err)
+		return fmt.Errorf("failed to get config status: %v", err)
 	}
 	printHdr("Config Status")
 	printVal("Last Update", cs.LastUpdate.Format(timeStamp))
@@ -184,7 +184,7 @@ func showNode(cli *SeesawCLI, args []string) error {
 
 	cs, err := cli.seesaw.ClusterStatus()
 	if err != nil {
-		return fmt.Errorf("Failed to get cluster status: %v", err)
+		return fmt.Errorf("failed to get cluster status: %v", err)
 	}
 	sort.Sort(seesaw.NodesByIPv4{cs.Nodes})
 	if len(args) == 1 {
@@ -231,7 +231,7 @@ func showBackend(cli *SeesawCLI, args []string) error {
 
 	vservers, err := cli.seesaw.Vservers()
 	if err != nil {
-		return fmt.Errorf("Failed to get vservers: %v", err)
+		return fmt.Errorf("failed to get vservers: %v", err)
 	}
 
 	// If no args given, list all backends.
@@ -321,7 +321,7 @@ func showDestination(cli *SeesawCLI, args []string) error {
 
 	vservers, err := cli.seesaw.Vservers()
 	if err != nil {
-		return fmt.Errorf("Failed to get vservers: %v", err)
+		return fmt.Errorf("failed to get vservers: %v", err)
 	}
 
 	// If no args given, list all destinations.
@@ -413,7 +413,7 @@ func showVserver(cli *SeesawCLI, args []string) error {
 
 	vservers, err := cli.seesaw.Vservers()
 	if err != nil {
-		return fmt.Errorf("Failed to get vservers: %v\n", err)
+		return fmt.Errorf("failed to get vservers: %v\n", err)
 	}
 
 	filter := ""
@@ -521,7 +521,7 @@ func showVersion(cli *SeesawCLI, args []string) error {
 func showWarning(cli *SeesawCLI, args []string) error {
 	cs, err := cli.seesaw.ConfigStatus()
 	if err != nil {
-		return fmt.Errorf("Failed to get config status: %v", err)
+		return fmt.Errorf("failed to get config status: %v", err)
 	}
 	if len(cs.Warnings) == 0 {
 		fmt.Println("No warnings.")

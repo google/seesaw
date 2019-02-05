@@ -346,13 +346,13 @@ func (c *IPHAConn) readIPv4Packet() (*packet, error) {
 		return nil, err
 	}
 	if n < 20 {
-		return nil, fmt.Errorf("IPHAConn.readIPv4Packet: Packet len %d is too small", n)
+		return nil, fmt.Errorf("iPHAConn.readIPv4Packet: Packet len %d is too small", n)
 	} else if int(b[0])>>4 != 4 {
-		return nil, fmt.Errorf("IPHAConn.readIPv4Packet: Expected an IPv4 packet")
+		return nil, fmt.Errorf("iPHAConn.readIPv4Packet: Expected an IPv4 packet")
 	}
 	hdrLen := (int(b[0]) & 0x0f) << 2
 	if hdrLen > n {
-		return nil, fmt.Errorf("IPHAConn.readIPv4Packet: Header len %d > total len %d", hdrLen, n)
+		return nil, fmt.Errorf("iPHAConn.readIPv4Packet: Header len %d > total len %d", hdrLen, n)
 	}
 	return &packet{
 		src:     net.IP{b[12], b[13], b[14], b[15]},
@@ -387,23 +387,23 @@ func (c *IPHAConn) readIPv6Packet() (*packet, error) {
 		switch sc.Header.Type {
 		case syscall.IPV6_2292HOPLIMIT:
 			if len(sc.Data) == 0 {
-				return nil, fmt.Errorf("IPHAConn.readIPv6Packet: Invalid HOPLIMIT")
+				return nil, fmt.Errorf("iPHAConn.readIPv6Packet: Invalid HOPLIMIT")
 			}
 			ttl = sc.Data[0]
 			haveTTL = true
 		case syscall.IPV6_2292PKTINFO:
 			if len(sc.Data) < 16 {
-				return nil, fmt.Errorf("IPHAConn.readIPv6Packet: Invalid destination address")
+				return nil, fmt.Errorf("iPHAConn.readIPv6Packet: Invalid destination address")
 			}
 			dst = net.IP(sc.Data[:16])
 		}
 	}
 
 	if !haveTTL {
-		return nil, fmt.Errorf("IPHAConn.readIPv6Packet: HOPLIMIT not found")
+		return nil, fmt.Errorf("iPHAConn.readIPv6Packet: HOPLIMIT not found")
 	}
 	if dst == nil {
-		return nil, fmt.Errorf("IPHAConn.readIPv6Packet: Destination address not found")
+		return nil, fmt.Errorf("iPHAConn.readIPv6Packet: Destination address not found")
 	}
 	return &packet{
 		src:     raddr.IP,
@@ -423,7 +423,7 @@ func (c *IPHAConn) send(advert *advertisement, timeout time.Duration) error {
 	if advert.Checksum == 0 {
 		chksum, err := checksum(advert, c.laddr, c.raddr)
 		if err != nil {
-			return fmt.Errorf("IPHAConn.send: checksum failed: %v", err)
+			return fmt.Errorf("iPHAConn.send: checksum failed: %v", err)
 		}
 		advert.Checksum = chksum
 	}

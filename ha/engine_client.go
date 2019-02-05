@@ -47,7 +47,7 @@ type EngineClient struct {
 func (e *EngineClient) HAConfig() (*seesaw.HAConfig, error) {
 	engineConn, err := net.DialTimeout("unix", e.Socket, engineTimeout)
 	if err != nil {
-		return nil, fmt.Errorf("HAConfig: Dial failed: %v", err)
+		return nil, fmt.Errorf("hAConfig: Dial failed: %v", err)
 	}
 	engineConn.SetDeadline(time.Now().Add(engineTimeout))
 	engine := rpc.NewClient(engineConn)
@@ -56,7 +56,7 @@ func (e *EngineClient) HAConfig() (*seesaw.HAConfig, error) {
 	var config seesaw.HAConfig
 	ctx := ipc.NewTrustedContext(seesaw.SCHA)
 	if err := engine.Call("SeesawEngine.HAConfig", ctx, &config); err != nil {
-		return nil, fmt.Errorf("HAConfig: SeesawEngine.HAConfig failed: %v", err)
+		return nil, fmt.Errorf("hAConfig: SeesawEngine.HAConfig failed: %v", err)
 	}
 	return &config, nil
 }
@@ -65,7 +65,7 @@ func (e *EngineClient) HAConfig() (*seesaw.HAConfig, error) {
 func (e *EngineClient) HAState(state seesaw.HAState) error {
 	engineConn, err := net.DialTimeout("unix", e.Socket, engineTimeout)
 	if err != nil {
-		return fmt.Errorf("HAState: Dial failed: %v", err)
+		return fmt.Errorf("hAState: Dial failed: %v", err)
 	}
 	engineConn.SetDeadline(time.Now().Add(engineTimeout))
 	engine := rpc.NewClient(engineConn)
@@ -74,7 +74,7 @@ func (e *EngineClient) HAState(state seesaw.HAState) error {
 	var reply int
 	ctx := ipc.NewTrustedContext(seesaw.SCHA)
 	if err := engine.Call("SeesawEngine.HAState", &ipc.HAState{ctx, state}, &reply); err != nil {
-		return fmt.Errorf("HAState: SeesawEngine.HAState failed: %v", err)
+		return fmt.Errorf("hAState: SeesawEngine.HAState failed: %v", err)
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func (e *EngineClient) HAState(state seesaw.HAState) error {
 func (e *EngineClient) HAUpdate(status seesaw.HAStatus) (bool, error) {
 	engineConn, err := net.DialTimeout("unix", e.Socket, engineTimeout)
 	if err != nil {
-		return false, fmt.Errorf("HAUpdate: Dial failed: %v", err)
+		return false, fmt.Errorf("hAUpdate: Dial failed: %v", err)
 	}
 	engineConn.SetDeadline(time.Now().Add(engineTimeout))
 	engine := rpc.NewClient(engineConn)
@@ -93,7 +93,7 @@ func (e *EngineClient) HAUpdate(status seesaw.HAStatus) (bool, error) {
 	var failover bool
 	ctx := ipc.NewTrustedContext(seesaw.SCHA)
 	if err := engine.Call("SeesawEngine.HAUpdate", &ipc.HAStatus{ctx, status}, &failover); err != nil {
-		return false, fmt.Errorf("HAUpdate: SeesawEngine.HAUpdate failed: %v", err)
+		return false, fmt.Errorf("hAUpdate: SeesawEngine.HAUpdate failed: %v", err)
 	}
 	return failover, nil
 }

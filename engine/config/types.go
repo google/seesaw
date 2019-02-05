@@ -61,7 +61,7 @@ func NewCluster(site string) *Cluster {
 func (c *Cluster) AddBGPPeer(peer *seesaw.Host) error {
 	key := peer.Hostname
 	if _, ok := c.BGPPeers[key]; ok {
-		return fmt.Errorf("Cluster %q already contains peer %q", c.Site, key)
+		return fmt.Errorf("cluster %q already contains peer %q", c.Site, key)
 	}
 	c.BGPPeers[key] = peer
 	return nil
@@ -71,7 +71,7 @@ func (c *Cluster) AddBGPPeer(peer *seesaw.Host) error {
 func (c *Cluster) AddNode(node *seesaw.Node) error {
 	key := node.Key()
 	if _, ok := c.Nodes[key]; ok {
-		return fmt.Errorf("Cluster %q already contains Node %q", c.Site, key)
+		return fmt.Errorf("cluster %q already contains Node %q", c.Site, key)
 	}
 	c.Nodes[key] = node
 	return nil
@@ -81,7 +81,7 @@ func (c *Cluster) AddNode(node *seesaw.Node) error {
 func (c *Cluster) AddVIPSubnet(subnet *net.IPNet) error {
 	key := subnet.String()
 	if _, ok := c.VIPSubnets[key]; ok {
-		return fmt.Errorf("Cluster %q already contains VIP Subnet %q", c.Site, key)
+		return fmt.Errorf("cluster %q already contains VIP Subnet %q", c.Site, key)
 	}
 	c.VIPSubnets[key] = subnet
 	return nil
@@ -91,7 +91,7 @@ func (c *Cluster) AddVIPSubnet(subnet *net.IPNet) error {
 func (c *Cluster) AddVserver(vserver *Vserver) error {
 	key := vserver.Key()
 	if _, ok := c.Vservers[key]; ok {
-		return fmt.Errorf("Cluster %q already contains Vserver %q", c.Site, key)
+		return fmt.Errorf("cluster %q already contains Vserver %q", c.Site, key)
 	}
 	c.Vservers[key] = vserver
 	return nil
@@ -101,7 +101,7 @@ func (c *Cluster) AddVserver(vserver *Vserver) error {
 func (c *Cluster) AddVLAN(vlan *seesaw.VLAN) error {
 	key := vlan.Key()
 	if _, ok := c.VLANs[key]; ok {
-		return fmt.Errorf("Cluster %q already contains VLAN %q", c.Site, key)
+		return fmt.Errorf("cluster %q already contains VLAN %q", c.Site, key)
 	}
 	c.VLANs[key] = vlan
 	return nil
@@ -147,7 +147,7 @@ func (v *Vserver) Key() string {
 func (v *Vserver) AddVserverEntry(e *VserverEntry) error {
 	key := e.Key()
 	if _, ok := v.Entries[key]; ok {
-		return fmt.Errorf("Vserver %q already contains VserverEntry %q", v.Name, key)
+		return fmt.Errorf("vserver %q already contains VserverEntry %q", v.Name, key)
 	}
 	v.Entries[key] = e
 	return nil
@@ -157,7 +157,7 @@ func (v *Vserver) AddVserverEntry(e *VserverEntry) error {
 func (v *Vserver) AddBackend(backend *seesaw.Backend) error {
 	key := backend.Key()
 	if _, ok := v.Backends[key]; ok {
-		return fmt.Errorf("Vserver %q already contains Backend %q", v.Name, key)
+		return fmt.Errorf("vserver %q already contains Backend %q", v.Name, key)
 	}
 	v.Backends[key] = backend
 	return nil
@@ -167,7 +167,7 @@ func (v *Vserver) AddBackend(backend *seesaw.Backend) error {
 func (v *Vserver) AddHealthcheck(h *Healthcheck) error {
 	key := h.Key()
 	if _, ok := v.Healthchecks[key]; ok {
-		return fmt.Errorf("Vserver %q already contains Healthcheck %q", v.Name, key)
+		return fmt.Errorf("vserver %q already contains Healthcheck %q", v.Name, key)
 	}
 	v.Healthchecks[key] = h
 	return nil
@@ -177,7 +177,7 @@ func (v *Vserver) AddHealthcheck(h *Healthcheck) error {
 func (v *Vserver) AddVIP(vip *seesaw.VIP) error {
 	key := vip.String()
 	if _, ok := v.VIPs[key]; ok {
-		return fmt.Errorf("Vserver %q already contains VIP %q", v.Name, key)
+		return fmt.Errorf("vserver %q already contains VIP %q", v.Name, key)
 	}
 	v.VIPs[key] = vip
 	return nil
@@ -212,7 +212,7 @@ func NewVserverEntry(port uint16, proto seesaw.IPProto) *VserverEntry {
 func (v *VserverEntry) AddHealthcheck(h *Healthcheck) error {
 	key := h.Key()
 	if _, ok := v.Healthchecks[key]; ok {
-		return fmt.Errorf("VserverEntry %q already contains Healthcheck %q", v.Key(), key)
+		return fmt.Errorf("vserverEntry %q already contains Healthcheck %q", v.Key(), key)
 	}
 	v.Healthchecks[key] = h
 	return nil

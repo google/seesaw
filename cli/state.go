@@ -42,13 +42,13 @@ func overrideVserver(cli *SeesawCLI, args []string, state seesaw.OverrideState) 
 	}
 	vservers, err := cli.seesaw.Vservers()
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve list of vservers: %v", err)
+		return fmt.Errorf("failed to retrieve list of vservers: %v", err)
 	}
 	if _, ok := vservers[args[0]]; !ok {
-		return fmt.Errorf("No such vserver - %s", args[0])
+		return fmt.Errorf("no such vserver - %s", args[0])
 	}
 	if err := cli.seesaw.OverrideVserver(&seesaw.VserverOverride{args[0], state}); err != nil {
-		return fmt.Errorf("Override vserver state failed - %s", err)
+		return fmt.Errorf("override vserver state failed - %s", err)
 	}
 	return nil
 }

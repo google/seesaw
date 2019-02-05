@@ -97,7 +97,7 @@ func (svc *Service) AddArgs(args string) {
 // SetPriority sets the process priority for a service.
 func (svc *Service) SetPriority(priority int) error {
 	if priority < -20 || priority > 19 {
-		return fmt.Errorf("Invalid priority %d - must be between -20 and 19", priority)
+		return fmt.Errorf("invalid priority %d - must be between -20 and 19", priority)
 	}
 	svc.priority = priority
 	return nil

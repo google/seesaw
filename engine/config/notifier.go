@@ -223,7 +223,7 @@ func (n *Notifier) bootstrap() (*Notification, error) {
 	}
 	log.Warningf("Failed to load cluster config from server: %v", err)
 
-	return nil, fmt.Errorf("Notifier.bootstrap: Failed to load any cluster config")
+	return nil, fmt.Errorf("notifier.bootstrap: Failed to load any cluster config")
 }
 
 func (n *Notifier) configFromDisk() (*Notification, error) {

@@ -70,7 +70,7 @@ func (v *VTY) Dial() error {
 // Close closes a connection to a Quagga VTY socket.
 func (v *VTY) Close() error {
 	if v.conn == nil {
-		return fmt.Errorf("No connection established")
+		return fmt.Errorf("no connection established")
 	}
 	err := v.conn.Close()
 	v.conn = nil
@@ -112,7 +112,7 @@ func (v *VTY) write(s string) error {
 	for len(b) > 0 {
 		n, err := v.conn.Write(b[:])
 		if err != nil {
-			return fmt.Errorf("VTY write failed: %v", err)
+			return fmt.Errorf("vTY write failed: %v", err)
 		}
 		b = b[n:]
 	}
@@ -130,7 +130,7 @@ func (v *VTY) read() (string, byte, error) {
 	for {
 		n, err := v.conn.Read(b)
 		if err != nil {
-			return "", 0, fmt.Errorf("VTY read failed: %v", err)
+			return "", 0, fmt.Errorf("vTY read failed: %v", err)
 		}
 		for _, v := range b[:n] {
 			if eom == 3 {

@@ -475,7 +475,7 @@ func (s *Server) Run() {
 func (s *Server) getHealthchecks() (*Checks, error) {
 	engineConn, err := net.DialTimeout("unix", s.config.EngineSocket, engineTimeout)
 	if err != nil {
-		return nil, fmt.Errorf("Dial failed: %v", err)
+		return nil, fmt.Errorf("dial failed: %v", err)
 	}
 	engineConn.SetDeadline(time.Now().Add(engineTimeout))
 	engine := rpc.NewClient(engineConn)
@@ -484,7 +484,7 @@ func (s *Server) getHealthchecks() (*Checks, error) {
 	var checks Checks
 	ctx := ipc.NewTrustedContext(seesaw.SCHealthcheck)
 	if err := engine.Call("SeesawEngine.Healthchecks", ctx, &checks); err != nil {
-		return nil, fmt.Errorf("SeesawEngine.Healthchecks failed: %v", err)
+		return nil, fmt.Errorf("seesawEngine.Healthchecks failed: %v", err)
 	}
 
 	return &checks, nil
