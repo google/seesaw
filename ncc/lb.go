@@ -232,6 +232,28 @@ func (ncc *SeesawNCC) LBInterfaceDeleteVserver(lbVserver *ncctypes.LBInterfaceVs
 	return iptablesDeleteRules(lbVserver.Vserver, lbVserver.Iface.ClusterVIP, lbVserver.AF)
 }
 
+// addSourceBasedRouting sets up sourced based routing policy for VIP so kernel will reply ARP requests for the VIP using LB interface.
+func addSourceBasedRouting(vip *ncctypes.LBInterfaceVIP) error {
+	if vip.IP.IP().To4() == nil {
+		// See comment in addClusterVIP above on why it's not done to IPV6.
+		return nil
+	}
+	ipRunAF(seesaw.IPv4, "rule del from %s", vip.IP.IP())
+	if err := ipRunAF(seesaw.IPv4, "rule add from %s lookup %d", vip.IP.IP(), vip.Iface.RoutingTableID); err != nil {
+		return fmt.Errorf("failed to set up sourced based routing for %s: %v", vip.VIP, err)
+	}
+	return nil
+}
+
+func removeSourceBasedRouting(vip *ncctypes.LBInterfaceVIP) {
+	if vip.IP.IP().To4() == nil {
+		return
+	}
+	if err := ipRunAF(seesaw.IPv4, "rule del from %s", vip.IP.IP()); err != nil {
+		log.Infof("Failed to remove sourced based routing policy for VIP %s: %v", vip.VIP, err)
+	}
+}
+
 // LBInterfaceAddVIP adds the specified VIP to the load balancing interface.
 func (ncc *SeesawNCC) LBInterfaceAddVIP(vip *ncctypes.LBInterfaceVIP, out *int) error {
 	switch vip.Type {
@@ -243,6 +265,13 @@ func (ncc *SeesawNCC) LBInterfaceAddVIP(vip *ncctypes.LBInterfaceVIP, out *int) 
 		iface, network, err := selectInterfaceNetwork(netIface, vip.IP.IP())
 		if err != nil {
 			return fmt.Errorf("Failed to select interface and network for %v: %v", vip.VIP, err)
+		}
+		// Only set source based routing if VIP is not in VLAN.
+		// If it's in VLAN, it's already isolated from node interface.
+		if iface.Name == netIface.Name {
+			if err := addSourceBasedRouting(vip); err != nil {
+				return err
+			}
 		}
 		log.Infof("Adding VIP %s to %s", vip.IP.IP(), iface.Name)
 		if err := ifaceAddIPAddr(iface, vip.IP.IP(), network.Mask); err != nil {
@@ -292,6 +321,10 @@ func (ncc *SeesawNCC) LBInterfaceDeleteVIP(vip *ncctypes.LBInterfaceVIP, out *in
 		if err := removeMainRoutes(vip.VIP.IP.IP()); err != nil {
 			log.Infof("Failed to remove main routes for VIP %s: %v", vip.VIP, err)
 		}
+		if iface.Name == netIface.Name {
+			removeSourceBasedRouting(vip)
+		}
+
 		return nil
 	case seesaw.AnycastVIP, seesaw.DedicatedVIP:
 		dummyIface, err := net.InterfaceByName(vip.Iface.DummyInterface)
