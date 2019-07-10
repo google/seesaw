@@ -38,7 +38,7 @@ var (
 	ifaceNameRegexp        = regexp.MustCompile(`^\w+\d+(\.\d+)?$`)
 	ipv6AddrRegexp         = regexp.MustCompile(`^\s*inet6 ([a-f0-9:/]+) .*$`)
 	routeDefaultIPv4Regexp = regexp.MustCompile(
-		`^default via (\d+\.\d+\.\d+\.\d+) dev ([a-z]+[0-9]) `)
+		`^default via (\d+\.\d+\.\d+\.\d+) dev ([a-z]+[0-9]+) `)
 )
 
 // validateInterface validates the name of a network interface.
