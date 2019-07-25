@@ -1,0 +1,24 @@
+# github.com/dlintw/goconf v0.0.0-20120228082610-dcc070983490
+github.com/dlintw/goconf
+# github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+github.com/golang/glog
+# github.com/golang/protobuf v1.3.2
+github.com/golang/protobuf/proto
+# github.com/kylelemons/godebug v1.1.0
+github.com/kylelemons/godebug/pretty
+github.com/kylelemons/godebug/diff
+# github.com/miekg/dns v1.1.15
+github.com/miekg/dns
+# golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
+golang.org/x/crypto/ssh/terminal
+golang.org/x/crypto/ed25519
+golang.org/x/crypto/ed25519/internal/edwards25519
+# golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
+golang.org/x/net/ipv4
+golang.org/x/net/ipv6
+golang.org/x/net/bpf
+golang.org/x/net/internal/iana
+golang.org/x/net/internal/socket
+# golang.org/x/sys v0.0.0-20190412213103-97732733099d
+golang.org/x/sys/unix
+golang.org/x/sys/windows
