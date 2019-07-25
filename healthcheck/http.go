@@ -101,7 +101,7 @@ func (hc *HTTPChecker) Check(timeout time.Duration) *Result {
 		u.Scheme = "http"
 	}
 	if u.Host == "" {
-		u.Host = hc.IP.String()
+		u.Host = hc.addr()
 	}
 
 	proxy := (func(*http.Request) (*url.URL, error))(nil)

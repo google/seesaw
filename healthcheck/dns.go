@@ -140,7 +140,7 @@ func (hc *DNSChecker) Check(timeout time.Duration) *Result {
 		return complete(start, msg, false, nil)
 	}
 	if rc := r.Rcode; rc != dns.RcodeSuccess {
-		msg = fmt.Sprintf("%s; non-zero response code - %s", msg, rc)
+		msg = fmt.Sprintf("%s; non-zero response code - %d", msg, rc)
 		return complete(start, msg, false, nil)
 	}
 	if len(r.Answer) < 1 {
