@@ -163,7 +163,8 @@ func testHTTPChecker(t *testing.T, secure bool) {
 		}
 
 		// Test with TLS inverted.
-		httpTests[0].configure(hc)
+		// Expect to get 400 code
+		httpTests[1].configure(hc)
 		hc.Secure = !secure
 		if result := hc.Check(timeout); result.Success {
 			t.Errorf("HTTP healthcheck %v to %v succeeded with secure=%t: %v",
