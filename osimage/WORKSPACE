@@ -1,0 +1,75 @@
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+# Most artifacts are stored here:
+GKE_ON_PREM_BUCKET = "gs://gke-on-prem-staging"
+# Original Canonical OVAs are stored here:
+GKE_ON_PREM_OS_UBUNTU_SOURCE_BUCKET = "gs://gke-on-prem-os-ubuntu-source"
+# GKE Kubernetes releases are stored here:
+K8S_RELEASE_BUCKET = "gs://kubernetes-release-gke"
+# bazel-skylib 0.8.0 released 2019.03.20 (https://github.com/bazelbuild/bazel-skylib/releases/tag/0.8.0)
+skylib_version = "0.8.0"
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "2ef429f5d7ce7111263289644d233707dba35e39696377ebab8b0bc701f7818e",
+    type = "tar.gz",
+    url = "https://github.com/bazelbuild/bazel-skylib/releases/download/{}/bazel-skylib.{}.tar.gz".format(skylib_version, skylib_version),
+)
+http_archive(
+    name = "bazel_toolchains",
+    sha256 = "109a99384f9d08f9e75136d218ebaebc68cc810c56897aea2224c57932052d30",
+    strip_prefix = "bazel-toolchains-94d31935a2c94fe7e7c7379a0f3393e181928ff7",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/94d31935a2c94fe7e7c7379a0f3393e181928ff7.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/94d31935a2c94fe7e7c7379a0f3393e181928ff7.tar.gz",
+    ],
+)
+# Download the rules_docker repository at release v0.8.1
+http_archive(
+    name = "io_bazel_rules_docker",
+    sha256 = "87fc6a2b128147a0a3039a2fd0b53cc1f2ed5adb8716f50756544a572999ae9a",
+    strip_prefix = "rules_docker-0.8.1",
+    urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.8.1.tar.gz"],
+)
+load(
+    "@io_bazel_rules_docker//repositories:repositories.bzl",
+    container_repositories = "repositories",
+)
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    "container_pull",
+)
+load("@bazel_toolchains//rules:gcs.bzl", "gcs_file")
+container_repositories()
+gcs_file(
+    name = "ubuntu_source",
+    bucket = GKE_ON_PREM_OS_UBUNTU_SOURCE_BUCKET,
+    downloaded_file_path = "ubuntu_source.ova",
+    file = "ubuntu-gke-onprem-1804-d1703-0-v20190628.ova",
+    sha256 = "bfd91b42b01b9f26b7d26c2c647c3f04669787ad564812f4fd1cc7ca08272186",
+)
+gcs_file(
+    name = "kubernetes_server_linux",
+    bucket = K8S_RELEASE_BUCKET,
+    downloaded_file_path = "kubernetes-server-linux-amd64.tar.gz",
+    file = "release/v1.12.7-gke.19/kubernetes-server-linux-amd64.tar.gz",
+    sha256 = "307f79d70a96eb91d79f5b94b2ca5cc4ed4879a6951433f2bff2e8b5847fc2f9",
+)
+gcs_file(
+    name = "cri_tools",
+    bucket = GKE_ON_PREM_BUCKET,
+    downloaded_file_path = "crictl",
+    file = "cri-tools/v1.12.0-gke.0/crictl",
+    sha256 = "dde38113b762b1a842b86ee684469fed6066298f91ca9bbe7f5c1abbcbaa9f46",
+)
+gcs_file(
+    name = "kubernetes_cni",
+    bucket = GKE_ON_PREM_BUCKET,
+    downloaded_file_path = "cni-plugins-amd64-v0.6.0-gke.1.tgz",
+    file = "cni-plugins/v0.6.0-gke.1/cni-plugins-amd64-v0.6.0-gke.1.tgz",
+    sha256 = "d189afa05f5ddc37e0cbd4ee7dd24d5bb26c9a383e7a0f0fed9aa63aa532f702",
+)
+container_pull(
+    name = "pause_amd64",
+    digest = "sha256:f350203fb84ec21cd118b2875b3824f004ee297bd4be88b7f29055c38709c21c",
+    registry = "gcr.io",
+    repository = "gke-on-prem-release/pause-amd64",
+)
