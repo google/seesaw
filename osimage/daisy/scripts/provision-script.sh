@@ -9,6 +9,9 @@ set -o xtrace
 set -o errexit
 set -o pipefail
 set -o nounset
+
+tar --extract --no-overwrite-dir --verbose --file /seesaw-bin-linux-amd64.tar.gz --directory /
+
 echo "IMAGE_VERSION=$IMAGE_VERSION"
 cat >> /etc/cloud/build.info <<EOF
 gke_on_prem_version: $IMAGE_VERSION
