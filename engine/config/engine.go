@@ -30,7 +30,7 @@ import (
 var defaultEngineConfig = EngineConfig{
 	AnycastEnabled:          true,
 	BGPUpdateInterval:       15 * time.Second,
-	CACertFile:              path.Join(seesaw.ConfigPath, "ssl", "ca.crt"),
+	CACertFile:              path.Join(seesaw.ConfigPath, "cacert", "cert.pem"),
 	ConfigFile:              path.Join(seesaw.ConfigPath, "seesaw.cfg"),
 	ConfigInterval:          1 * time.Minute,
 	ConfigServers:           []string{"seesaw-config.example.com"},

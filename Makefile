@@ -9,6 +9,7 @@ install: all
 	go install github.com/google/seesaw/binaries/seesaw_healthcheck
 	go install github.com/google/seesaw/binaries/seesaw_ncc
 	go install github.com/google/seesaw/binaries/seesaw_watchdog
+	go install github.com/google/seesaw/binaries/seesaw_config
 
 install-test-tools: all
 	go install github.com/google/seesaw/test_tools/healthcheck_test_tool
