@@ -22,3 +22,8 @@ proto:
 
 test: all
 	go test ./...
+
+notices:
+	go run ./tools/licensecat | sed 's/[ \t ]*$$//' > NOTICES.vendor
+	{ cat LICENSE; printf "\n"; cat NOTICES.vendor; } > NOTICES
+	rm -f NOTICES.vendor
