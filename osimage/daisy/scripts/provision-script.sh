@@ -28,26 +28,25 @@ sed -i '/ swap / s/^/#/' /etc/fstab
 systemctl disable systemd-networkd-wait-online.service
 # Add folder for Kubernetes certificate.
 mkdir -p /etc/kubernetes/pki
-# Create system user for SSH tunneling
-SSH_TUNNEL_USER=gke-apiserver-tunnel
-mkdir -p /var/lib/gke
-useradd --comment 'GKE Apiserver Tunnel' \
-  --home-dir "/var/lib/gke/${SSH_TUNNEL_USER}" --create-home \
-  --shell '/usr/sbin/nologin' --system \
-  "${SSH_TUNNEL_USER}"
-usermod --lock "${SSH_TUNNEL_USER}"
-cat >>/etc/ssh/sshd_config <<EOF
-#### Google GKE SSH Tunnel User control. Do not edit this section.
-Match User ${SSH_TUNNEL_USER}
-  AllowTcpForwarding local
-  AllowStreamLocalForwarding no
-  X11Forwarding no
-  PermitTunnel no
-  PermitTTY no
-  GatewayPorts no
-  AllowAgentForwarding no
-  ForceCommand echo 'This account can only be used for ssh tunnels'
-#### End Google GKE SSH Tunnel User control.
+
+# prepare Seesaw environment
+apt-get install -y \
+  libnl-3-dev \
+  libnl-genl-3-dev \
+  ipvsadm \
+
+# Seesaw requires a dummy interface
+cat > /etc/systemd/network/10-dummy0.netdev <<EOF
+[NetDev]
+Name=dummy0
+Kind=dummy
 EOF
+
+echo "ip_vs" > /etc/modules-load.d/ip_vs.conf
+echo "options ip_vs  conn_tab_bits=20" > /etc/modprobe.d/ip_vs.conf
+echo "nf_conntrack_ipv4" > /etc/modules-load.d/nf_conntrack_ipv4.conf
+echo "dummy" > /etc/modules-load.d/dummy.conf
+echo "options dummy numdummies=1" > /etc/modprobe.d/dummy.conf
+
 apt-get clean
 dpkg-query -W > /run/image-manifest.txt
