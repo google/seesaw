@@ -30,7 +30,6 @@ import (
 	"net"
 	"net/http"
 	"net/rpc"
-	"path"
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
@@ -40,13 +39,9 @@ import (
 )
 
 var defaultConfig = ECUConfig{
-	CACertsFile:    path.Join(seesaw.ConfigPath, "ssl", "ca.crt"),
-	ControlAddress: ":10256",
-	ECUCertFile:    path.Join(seesaw.ConfigPath, "ssl", "seesaw.crt"),
-	ECUKeyFile:     path.Join(seesaw.ConfigPath, "ssl", "seesaw.key"),
 	EngineSocket:   seesaw.EngineSocket,
-	MonitorAddress: ":10257",
 	UpdateInterval: 10 * time.Second,
+	HealthzAddress: ":40258",
 }
 
 // ECUConfig provides configuration details for a Seesaw ECU.
@@ -58,6 +53,7 @@ type ECUConfig struct {
 	EngineSocket   string
 	MonitorAddress string
 	UpdateInterval time.Duration
+	HealthzAddress string
 }
 
 // DefaultECUConfig returns the default ECU configuration.
@@ -93,15 +89,18 @@ func (e *ECU) Run() {
 		log.Warningf("Failed to initialise authentication, remote control will likely fail: %v", err)
 	}
 
-	stats := newECUStats(e)
-	go stats.run()
-
 	go e.control()
 	go e.monitoring()
+
+	cache := newStatsCache(e.cfg.EngineSocket, time.Second)
+	healthz := newHealthzServer(e.cfg.HealthzAddress, cache)
+	go healthz.run()
 
 	<-e.shutdown
 	e.shutdownControl <- true
 	e.shutdownMonitor <- true
+	healthz.shutdown()
+
 	<-e.shutdownControl
 	<-e.shutdownMonitor
 }
@@ -113,6 +112,10 @@ func (e *ECU) Shutdown() {
 
 // monitoring starts an HTTP server for monitoring purposes.
 func (e *ECU) monitoring() {
+	if len(e.cfg.MonitorAddress) == 0 {
+		log.Warning("Monitoring is disabled")
+		return
+	}
 	ln, err := net.Listen("tcp", e.cfg.MonitorAddress)
 	if err != nil {
 		log.Fatal("listen error:", err)
@@ -158,9 +161,7 @@ func (e *ECU) controlTLSConfig() (*tls.Config, error) {
 func (e *ECU) control() {
 	tlsConfig, err := e.controlTLSConfig()
 	if err != nil {
-		log.Errorf("Disabling ECU control server: %v", err)
-		<-e.shutdownControl
-		e.shutdownControl <- true
+		log.Warningf("Disabling ECU control server: %v", err)
 		return
 	}
 
