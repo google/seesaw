@@ -31,7 +31,7 @@ func TestHealthz(t *testing.T) {
 	}{
 		{state: seesaw.HABackup, method: http.MethodGet, expectCode: http.StatusOK},
 		{state: seesaw.HAMaster, method: http.MethodGet, expectCode: http.StatusOK},
-		{state: seesaw.HAUnknown, method: http.MethodGet, expectCode: http.StatusInternalServerError},
+		{state: seesaw.HAUnknown, method: http.MethodGet, expectCode: http.StatusServiceUnavailable},
 		{state: seesaw.HABackup, method: http.MethodPost, expectCode: http.StatusMethodNotAllowed},
 		{cacheFailed: true, method: http.MethodGet, expectCode: http.StatusInternalServerError},
 	}

@@ -55,7 +55,7 @@ func (s *healthzServer) handle(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusOK
 	text := "Ok"
 	if !isHealth {
-		status = http.StatusInternalServerError
+		status = http.StatusServiceUnavailable
 		text = "Unhealthy"
 	}
 
