@@ -18,7 +18,7 @@ import (
 var (
 	initConfigFile = flag.String("init-config", "/etc/seesaw/init-cluster.pb", "Path to the initial cluster config")
 	configPort     = flag.Int("config_port", 10255, "port for serving /config. Only bound to localhost.")
-	vserverPort    = flag.Int("vserver_port", 40257, "port for serving /vservers")
+	vserverPort    = flag.Int("vserver_port", 20255, "port for serving /vservers")
 	caCertFile     = flag.String("ca-cert", "/etc/seesaw/cacert/cert.pem", "the file path to CA certs file")
 	serverCertDir  = flag.String("server-cert-dir", "/etc/seesaw/cert/", "The directory where server certs and key are stored. Assuming file names are 'cert.pem' and 'key.pem'.")
 )

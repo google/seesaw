@@ -41,7 +41,7 @@ import (
 var defaultConfig = ECUConfig{
 	EngineSocket:   seesaw.EngineSocket,
 	UpdateInterval: 10 * time.Second,
-	HealthzAddress: ":40258",
+	HealthzAddress: ":20256",
 }
 
 // ECUConfig provides configuration details for a Seesaw ECU.
