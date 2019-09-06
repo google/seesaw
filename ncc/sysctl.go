@@ -66,6 +66,8 @@ var seesawIfaceSysctls = []struct {
 
 	// Only respond to ARP requests via the interface the IP belongs to.
 	{seesaw.IPv4, "arp_filter", "1"},
+	{seesaw.IPv4, "arp_ignore", "1"},
+	{seesaw.IPv4, "arp_announce", "2"},
 
 	// Generate gratuitous ARP messages when interface is brought up.
 	{seesaw.IPv4, "arp_notify", "1"},
