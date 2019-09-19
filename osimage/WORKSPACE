@@ -43,8 +43,8 @@ gcs_file(
     name = "ubuntu_source",
     bucket = GKE_ON_PREM_OS_UBUNTU_SOURCE_BUCKET,
     downloaded_file_path = "ubuntu_source.ova",
-    file = "ubuntu-gke-onprem-1804-d1703-0-v20190628.ova",
-    sha256 = "bfd91b42b01b9f26b7d26c2c647c3f04669787ad564812f4fd1cc7ca08272186",
+    file = "ubuntu-gke-onprem-1804-d1703-0-v20190917.ova",
+    sha256 = "d5d7f75cd7f2f7d12d32c50fd59bf4a63a724fedb6fb83121aa7c7c9b7086c66",
 )
 gcs_file(
     name = "kubernetes_server_linux",
