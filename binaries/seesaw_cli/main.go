@@ -174,6 +174,10 @@ func interactive() {
 	}()
 
 	terminalInit()
+	rawState, err := terminal.GetState(syscall.Stdin)
+	if err != nil {
+		fatalf("Failed to get raw terminal state: %v", err)
+	}
 
 	for {
 		cmdline, err := term.ReadLine()
@@ -184,9 +188,11 @@ func interactive() {
 		if cmdline == "" {
 			continue
 		}
+		terminal.Restore(syscall.Stdin, oldTermState)
 		if err := seesawCLI.Execute(cmdline); err != nil {
 			fmt.Println(err)
 		}
+		terminal.Restore(syscall.Stdin, rawState)
 	}
 }
 
