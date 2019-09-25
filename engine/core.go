@@ -618,7 +618,7 @@ func (e *Engine) becomeBackup() {
 
 	e.syncClient.enable()
 	e.hcManager.disable()
-	e.notifier.SetSource(config.SourcePeer)
+	e.notifier.SetSource(config.SourceServer)
 
 	if err := e.lbInterface.Down(); err != nil {
 		log.Fatalf("Failed to bring LB interface down: %v", err)
