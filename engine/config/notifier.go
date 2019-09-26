@@ -62,7 +62,7 @@ func NewNotifier(ec *EngineConfig) (*Notifier, error) {
 		reload:    make(chan bool, 1),
 		shutdown:  make(chan bool, 1),
 		engineCfg: ec,
-		source:    SourcePeer,
+		source:    SourceServer,
 	}
 
 	note, err := n.bootstrap()

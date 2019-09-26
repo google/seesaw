@@ -273,11 +273,27 @@ func (ncc *SeesawNCC) LBInterfaceAddVIP(vip *ncctypes.LBInterfaceVIP, out *int) 
 				return err
 			}
 		}
-		log.Infof("Adding VIP %s to %s", vip.IP.IP(), iface.Name)
-		if err := ifaceAddIPAddr(iface, vip.IP.IP(), network.Mask); err != nil {
+		ipAddr := vip.IP.IP()
+		log.Infof("Adding VIP %s to %s", ipAddr, iface.Name)
+		if err := ifaceAddIPAddr(iface, ipAddr, network.Mask); err != nil {
 			return err
 		}
-		return routeLocal(iface, vip.IP.IP(), vip.Iface.Node)
+
+		if err := routeLocal(iface, ipAddr, vip.Iface.Node); err != nil {
+			return err
+		}
+		// Trigger a gratuitous arp to refresh arp entries in the LAN.
+		if ipAddr.To4() != nil && (iface.Flags&net.FlagUp) != 0 {
+			m, err := gratuitousARPReply(ipAddr, iface.HardwareAddr)
+			if err != nil {
+				return err
+			}
+			if err := sendARP(iface, m); err != nil {
+				return err
+			}
+			log.Infof("Sent gratuitous ARP for %s", ipAddr)
+		}
+		return nil
 	case seesaw.AnycastVIP, seesaw.DedicatedVIP:
 		dummyIface, err := net.InterfaceByName(vip.Iface.DummyInterface)
 		if err != nil {
