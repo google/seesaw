@@ -17,6 +17,7 @@
 package config
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -84,14 +85,16 @@ func newFetcher(cfg *EngineConfig) (*fetcher, error) {
 
 // fetchFromHost attempts to fetch the specified URL from a specific host.
 func (f *fetcher) fetchFromHost(ip net.IP, url, contentType string) ([]byte, error) {
-	// TODO(angusc): connection timeout?
+	deadline := time.Now().Add(f.timeout)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
 	tcpAddr := &net.TCPAddr{IP: ip, Port: f.port}
-	tcpConn, err := net.DialTCP("tcp", nil, tcpAddr)
+	var d net.Dialer
+	tcpConn, err := d.DialContext(ctx, "tcp", tcpAddr.String())
 	if err != nil {
 		return nil, err
 	}
 	defer tcpConn.Close()
-	tcpConn.SetDeadline(time.Now().Add(f.timeout))
 	dialer := func(net string, addr string) (net.Conn, error) {
 		return tcpConn, nil
 	}
@@ -113,6 +116,7 @@ func (f *fetcher) fetchFromHost(ip net.IP, url, contentType string) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
+	req = req.WithContext(ctx)
 	req.Header.Add("Connection", "close")
 
 	resp, err := client.Do(req)
