@@ -38,9 +38,35 @@ prepare_host() {
   build_status "Preparing host OS"
   gsutil cp "${DAISY_SOURCES_PATH}/builddeps.tar" ./
   tar --extract --verbose --file builddeps.tar
+
+  cat > /etc/apt/sources.list.d/docker-ppa.list <<'EOF'
+# CLOUD_IMG: This file was created/modified by the Cloud Image build process
+# Docker PPA for (pinned) packages to enable Kubernetes.
+deb http://ppa.launchpad.net/cloud-images/docker-k8s1.9/ubuntu bionic main
+EOF
+
+  cat > /etc/apt/preferences.d/cloud-images-docker-k8s19-pin-900 <<'EOF'
+Package: docker.io
+Pin: release o=LP-PPA-cloud-images-docker-k8s1.9
+Pin-Priority: 900
+EOF
+
+  mkdir -p /etc/systemd/system/docker.service.d
+  cat > /etc/systemd/system/docker.service.d/gke-docker-options.conf <<'EOF'
+# CLOUD_IMG: This file was created/modified by the Cloud Image build process
+# This file is overriding parts of docker's packaged service file.
+[Service]
+ExecStart=
+ExecStart=/usr/bin/dockerd -H fd:// --live-restore -s overlay2 $DOCKER_OPTS
+EOF
+
+  # From builddeps.tar
+  apt-key add docker-k8s1.9.asc
+
   apt-get update
   env DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    qemu-utils
+    qemu-utils \
+    docker.io=17.03.2-0ubuntu7~ppa2
 }
 fetch_and_write_image() {
   build_status "Extracting image and writing to disk"
