@@ -70,6 +70,16 @@ prepare_chroot() {
 }
 provision_image() {
   build_status "Provisioning image"
+
+  # HACK: Embed docker images into filesystem (b/124055335)
+  # from builddeps.tar/containers.tar
+  systemctl stop docker
+  # This would reconfigure docker to use rootfs directory as storage
+  echo '{"graph": "'"${rootfs}"'/var/lib/docker"}' > /etc/docker/daemon.json
+  systemctl start docker
+  docker load < containers.tar
+  systemctl stop docker
+
   # Pull overlay archive
   gsutil cp "${DAISY_SOURCES_PATH}/overlay.tar" "overlay.tar"
   tar --extract --verbose --file overlay.tar --directory "${rootfs}"
