@@ -10,6 +10,8 @@ OVERLAY_FILES = {
     # From: extract_toolbox
     "toolbox/LICENSE": "usr/src/toolbox/LICENSE",
     "toolbox/toolbox": "usr/bin/toolbox",
+     # Disable network config
+    "etc_cloud_cloud_cfg_d_99-disable-network-config_cfg": "etc/cloud/cloud.cfg.d/99-disable-network-config.cfg",
 }
 pkg_tar(
     name = "overlay",
