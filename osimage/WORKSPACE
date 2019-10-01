@@ -67,9 +67,23 @@ gcs_file(
     file = "cni-plugins/v0.6.0-gke.1/cni-plugins-amd64-v0.6.0-gke.1.tgz",
     sha256 = "d189afa05f5ddc37e0cbd4ee7dd24d5bb26c9a383e7a0f0fed9aa63aa532f702",
 )
+gcs_file(
+    name = "toolbox",
+    bucket = GKE_ON_PREM_BUCKET,
+    downloaded_file_path = "toolbox-v0.0.1.tgz",
+    file = "toolbox/v0.0.1/toolbox-v0.0.1.tgz",
+    sha256 = "886d3536852aeb7a5cbac3535d84771c9cde2ad2645e720a28bcfea625fdf935",
+)
+
 container_pull(
     name = "pause_amd64",
     digest = "sha256:f350203fb84ec21cd118b2875b3824f004ee297bd4be88b7f29055c38709c21c",
     registry = "gcr.io",
     repository = "gke-on-prem-release/pause-amd64",
+)
+container_pull(
+    name = "debug_toolbox",
+    digest = "sha256:91982e56ae2aced49455471ce7c1eeeff906399c25ff4db603cfbbbfdb118276",
+    registry = "gcr.io",
+    repository = "gke-on-prem-staging/debug-toolbox",
 )

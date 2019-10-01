@@ -18,9 +18,13 @@ gke_on_prem_version: $IMAGE_VERSION
 EOF
 apt-get update -y
 apt-get install -y \
-  prips \
+  arping \
   cloud-utils \
-  conntrack
+  conntrack \
+  logrotate \
+  prips \
+  systemd-container
+
 # Disable swap otherwise kubelet won't run.
 sed -i '/ swap / s/^/#/' /etc/fstab
 # Don't wait network to be online. The network could be configured in
@@ -49,4 +53,7 @@ echo "dummy" > /etc/modules-load.d/dummy.conf
 echo "options dummy numdummies=1" > /etc/modprobe.d/dummy.conf
 
 apt-get clean
+# Remove machine identifier if systemd sets one up in a
+# postinstall script.
+truncate -s 0 /etc/machine-id
 dpkg-query -W > /run/image-manifest.txt

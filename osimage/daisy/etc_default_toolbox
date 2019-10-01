@@ -1,0 +1,2 @@
+TOOLBOX_DOCKER_IMAGE="gcr.io/gke-on-prem-release/debug-toolbox"
+TOOLBOX_DOCKER_TAG="v0.0.1"
