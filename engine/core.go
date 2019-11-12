@@ -392,7 +392,7 @@ func (e *Engine) manager() {
 			e.haManager.setState(state)
 
 		case status := <-e.haManager.statusChan:
-			log.Infof("Received HA status notification (%v)", status.State)
+			log.V(1).Infof("Received HA status notification (%v)", status.State)
 			e.haManager.setStatus(status)
 
 		case <-e.haManager.timer():

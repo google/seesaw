@@ -187,7 +187,7 @@ func (f *fetcher) fetch(handler fetchHandler) (string, []byte, error) {
 				continue
 			}
 			source := fmt.Sprintf("%v (%v)", url, ip)
-			log.Infof("Successful fetch from config server %v", source)
+			log.V(1).Info("Successful fetch from config server %v", source)
 			return source, body, nil
 		}
 	}

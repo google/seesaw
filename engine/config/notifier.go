@@ -168,7 +168,7 @@ func (n *Notifier) configCheck() {
 	}
 
 	if note.Cluster.Equal(last.Cluster) {
-		log.Infof("No config changes found")
+		log.V(1).Infof("No config changes found")
 		return
 	}
 
