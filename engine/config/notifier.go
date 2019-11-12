@@ -208,17 +208,7 @@ func (n *Notifier) pullConfig(s Source) (*Notification, error) {
 func (n *Notifier) bootstrap() (*Notification, error) {
 	var note *Notification
 	var err error
-	if note, err = n.pullConfig(SourcePeer); err == nil {
-		return note, nil
-	}
-	log.Warningf("Failed to load cluster config from peer: %v", err)
-
-	if note, err = n.pullConfig(SourceDisk); err == nil {
-		return note, nil
-	}
-	log.Warningf("Failed to load cluster config from disk: %v", err)
-
-	if note, err = n.pullConfig(SourceServer); err == nil {
+	if note, err = n.pullConfig(n.Source()); err == nil {
 		return note, nil
 	}
 	log.Warningf("Failed to load cluster config from server: %v", err)
