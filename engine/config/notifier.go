@@ -136,7 +136,7 @@ func (n *Notifier) run() {
 
 // configCheck checks for configuration changes.
 func (n *Notifier) configCheck() {
-	log.Infof("Checking for config changes...")
+	log.V(1).Info("Checking for config changes...")
 
 	s := n.Source()
 	last := n.last
