@@ -22,26 +22,28 @@
 package ecu
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
-	"net/rpc"
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
-	"github.com/google/seesaw/common/server"
+	"github.com/google/seesaw/ecu/prom"
 
 	log "github.com/golang/glog"
 )
 
 var defaultConfig = ECUConfig{
 	EngineSocket:   seesaw.EngineSocket,
-	UpdateInterval: 10 * time.Second,
 	HealthzAddress: ":20256",
+	MonitorAddress: ":20257",
+	CACertsFile:    "/etc/seesaw/ssl/ca/cert.pem",
+	ECUCertFile:    "/etc/seesaw/ssl/ecu/cert.pem",
+	ECUKeyFile:     "/etc/seesaw/ssl/ecu/key.pem",
 }
 
 // ECUConfig provides configuration details for a Seesaw ECU.
@@ -89,20 +91,27 @@ func (e *ECU) Run() {
 		log.Warningf("Failed to initialise authentication, remote control will likely fail: %v", err)
 	}
 
-	go e.control()
-	go e.monitoring()
+	tlsConfig, err := e.tlsConfig()
+	if err != nil {
+		log.Fatalf("failed to load tls config: %v", err)
+	}
 
 	cache := newStatsCache(e.cfg.EngineSocket, time.Second)
+
+	httpsServer := e.httpsServer(tlsConfig)
+
 	healthz := newHealthzServer(e.cfg.HealthzAddress, cache)
 	go healthz.run()
 
 	<-e.shutdown
-	e.shutdownControl <- true
-	e.shutdownMonitor <- true
+
+	if httpsServer != nil {
+		if err := httpsServer.Shutdown(context.Background()); err != nil {
+			log.Errorf("HTTPs server Shutdown failed: %v", err)
+		}
+	}
 	healthz.shutdown()
 
-	<-e.shutdownControl
-	<-e.shutdownMonitor
 }
 
 // Shutdown notifies the ECU to shutdown.
@@ -111,30 +120,31 @@ func (e *ECU) Shutdown() {
 }
 
 // monitoring starts an HTTP server for monitoring purposes.
-func (e *ECU) monitoring() {
-	if len(e.cfg.MonitorAddress) == 0 {
-		log.Warning("Monitoring is disabled")
-		return
-	}
-	ln, err := net.Listen("tcp", e.cfg.MonitorAddress)
+func (e *ECU) httpsServer(tlsConfig *tls.Config) *http.Server {
+	handler, err := prom.NewHandler()
 	if err != nil {
-		log.Fatal("listen error:", err)
+		log.Fatalf("failed to create prometheus handler: %v", err)
 	}
+	mux := http.NewServeMux()
+	mux.Handle(prom.MetricsPath, handler)
 
-	monitorHTTP := &http.Server{
-		ReadTimeout:    30 * time.Second,
-		WriteTimeout:   30 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+	s := &http.Server{
+		Addr:         e.cfg.MonitorAddress,
+		Handler:      mux,
+		ReadTimeout:  20 * time.Second,
+		WriteTimeout: 20 * time.Second,
+		TLSConfig:    tlsConfig,
 	}
-	go monitorHTTP.Serve(ln)
-
-	<-e.shutdownMonitor
-	ln.Close()
-	e.shutdownMonitor <- true
+	go func() {
+		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+			log.Errorf("httpsServer ListenAndServe failed: %v", err)
+		}
+	}()
+	return s
 }
 
-// controlTLSConfig returns a TLS configuration for use by the control server.
-func (e *ECU) controlTLSConfig() (*tls.Config, error) {
+// tlsConfig returns a TLS configuration for use by the ecu server.
+func (e *ECU) tlsConfig() (*tls.Config, error) {
 	rootCACerts := x509.NewCertPool()
 	data, err := ioutil.ReadFile(e.cfg.CACertsFile)
 	if err != nil {
@@ -147,35 +157,10 @@ func (e *ECU) controlTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load X.509 key pair: %v", err)
 	}
-	// TODO(jsing): Make the server name configurable.
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{certs},
 		RootCAs:      rootCACerts,
-		ServerName:   "seesaw.example.com",
+		ClientAuth:   tls.RequireAndVerifyClientCert,
 	}
 	return tlsConfig, nil
-}
-
-// control starts an HTTP server to handle control RPC via a TCP socket. This
-// interface is used to control the Seesaw Node via the CLI or web console.
-func (e *ECU) control() {
-	tlsConfig, err := e.controlTLSConfig()
-	if err != nil {
-		log.Warningf("Disabling ECU control server: %v", err)
-		return
-	}
-
-	ln, err := net.Listen("tcp", e.cfg.ControlAddress)
-	if err != nil {
-		log.Fatal("listen error:", err)
-	}
-
-	seesawRPC := rpc.NewServer()
-	seesawRPC.Register(&SeesawECU{e})
-	tlsListener := tls.NewListener(ln, tlsConfig)
-	go server.RPCAccept(tlsListener, seesawRPC)
-
-	<-e.shutdownControl
-	ln.Close()
-	e.shutdownControl <- true
 }
