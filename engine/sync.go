@@ -380,7 +380,11 @@ func (sc *syncClient) dial() error {
 	self := &net.TCPAddr{
 		IP: sc.engine.config.Node.IPv4Addr,
 	}
-	conn, err := net.DialTCP("tcp", self, peer)
+	d := net.Dialer{
+		Timeout:   time.Second * 2,
+		LocalAddr: self,
+	}
+	conn, err := d.Dial("tcp", peer.String())
 	if err != nil {
 		return fmt.Errorf("failed to connect: %v", err)
 	}
