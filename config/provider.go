@@ -2,6 +2,7 @@ package config
 
 import (
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	pb "github.com/google/seesaw/pb/config"
@@ -29,5 +30,9 @@ func (p *Provider) get() ([]byte, error) {
 func (p *Provider) updateVservers(vs []*pb.Vserver) {
 	p.mux.Lock()
 	defer p.mux.Unlock()
+	if p.config.Metadata == nil {
+		p.config.Metadata = &pb.Metadata{}
+	}
+	p.config.Metadata.LastUpdated = proto.Int64(time.Now().Unix())
 	p.config.Vserver = vs
 }

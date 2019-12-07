@@ -31,8 +31,8 @@ func newHealthzServer(address string, stats *statsCache) *healthzServer {
 	return s
 }
 
-func (s *healthzServer) isReady() (bool, error) {
-	ha, err := s.stats.getHA()
+func (s *healthzServer) isAlive() (bool, error) {
+	ha, err := s.stats.getHAStatus()
 	if err != nil {
 		return false, err
 	}
@@ -47,7 +47,7 @@ func (s *healthzServer) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isHealth, err := s.isReady()
+	isHealth, err := s.isAlive()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to fetch readiness: %v", err), http.StatusInternalServerError)
 		return

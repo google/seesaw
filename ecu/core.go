@@ -28,19 +28,25 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
 	"github.com/google/seesaw/ecu/prom"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
 	log "github.com/golang/glog"
+	ecupb "github.com/google/seesaw/pb/ecu"
 )
 
 var defaultConfig = ECUConfig{
 	EngineSocket:   seesaw.EngineSocket,
 	HealthzAddress: ":20256",
 	MonitorAddress: ":20257",
+	ControlAddress: ":20258",
 	CACertsFile:    "/etc/seesaw/ssl/ca/cert.pem",
 	ECUCertFile:    "/etc/seesaw/ssl/ecu/cert.pem",
 	ECUKeyFile:     "/etc/seesaw/ssl/ecu/key.pem",
@@ -103,15 +109,15 @@ func (e *ECU) Run() {
 	healthz := newHealthzServer(e.cfg.HealthzAddress, cache)
 	go healthz.run()
 
+	cs := e.controlServer(cache, tlsConfig)
+
 	<-e.shutdown
 
-	if httpsServer != nil {
-		if err := httpsServer.Shutdown(context.Background()); err != nil {
-			log.Errorf("HTTPs server Shutdown failed: %v", err)
-		}
+	if err := httpsServer.Shutdown(context.Background()); err != nil {
+		log.Errorf("HTTPs server Shutdown failed: %v", err)
 	}
 	healthz.shutdown()
-
+	cs.Stop()
 }
 
 // Shutdown notifies the ECU to shutdown.
@@ -137,7 +143,7 @@ func (e *ECU) httpsServer(tlsConfig *tls.Config) *http.Server {
 	}
 	go func() {
 		if err := s.ListenAndServe(); err != http.ErrServerClosed {
-			log.Errorf("httpsServer ListenAndServe failed: %v", err)
+			log.Fatalf("httpsServer ListenAndServe failed: %v", err)
 		}
 	}()
 	return s
@@ -163,4 +169,20 @@ func (e *ECU) tlsConfig() (*tls.Config, error) {
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 	}
 	return tlsConfig, nil
+}
+
+func (e *ECU) controlServer(cache *statsCache, tlsConfig *tls.Config) *grpc.Server {
+	lis, err := net.Listen("tcp", e.cfg.ControlAddress)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	creds := credentials.NewTLS(tlsConfig)
+	s := grpc.NewServer(grpc.Creds(creds))
+	ecupb.RegisterSeesawECUServer(s, newControlServer(e.cfg.EngineSocket, cache))
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+	return s
 }

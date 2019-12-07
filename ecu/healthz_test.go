@@ -16,7 +16,7 @@ var (
 
 func TestHealthz(t *testing.T) {
 	cache := newStatsCache("xx", time.Hour)
-	cache.haTime = time.Now()
+	cache.lastRefresh = time.Now()
 	s := newHealthzServer(addr, cache)
 	go s.run()
 	defer s.shutdown()

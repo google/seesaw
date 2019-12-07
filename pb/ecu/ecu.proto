@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package ecu;
+
+import "google/protobuf/timestamp.proto";
+
+// The SeesawECU service definition
+service SeesawECU {
+  // Calling Failover() on any of the LB instance triggers a switch of master.
+  rpc Failover(FailoverRequest) returns(FailoverResponse) {}
+
+  // Returns SeesawStats.
+  rpc GetStats(GetStatsRequest) returns(SeesawStats) {}
+}
+
+// Request for failover.
+message FailoverRequest {}
+
+// Response for failover.
+message FailoverResponse {}
+
+message GetStatsRequest {}
+
+// SeesawStats includes stats that are interested by syllogi.
+message SeesawStats {
+  // Hostname of the instance.
+  string hostname = 1;
+
+  // HAState reported by Seesaw. It's the protobuffer equivalent of Seesaw.HAState.
+  enum HAState {
+    HA_UNKNOWN = 0;
+    HA_BACKUP = 1;
+    HA_DISABLED = 2;
+    HA_ERROR = 3;
+    HA_MASTER = 4;
+    HA_SHUTDOWN = 5;
+  }
+  HAState ha_state = 2;
+
+  // The time when current config is pushsed.
+  google.protobuf.Timestamp config_timestamp = 3;
+}

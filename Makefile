@@ -19,6 +19,7 @@ install-test-tools: all
 
 proto:
 	protoc --go_out=. pb/config/config.proto
+	protoc --go_out=plugins=grpc:. pb/ecu/*.proto
 
 test: all
 	go test ./...

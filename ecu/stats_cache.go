@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/golang/glog"
 	"github.com/google/seesaw/common/conn"
 	"github.com/google/seesaw/common/ipc"
 	"github.com/google/seesaw/common/seesaw"
@@ -19,8 +18,10 @@ type statsCache struct {
 	staleThreashold time.Duration
 	engineSocket    string
 
-	haTime time.Time
-	ha     *seesaw.HAStatus
+	lastRefresh time.Time
+
+	ha *seesaw.HAStatus
+	cs *seesaw.ConfigStatus
 }
 
 func newStatsCache(engineSocket string, staleThreashold time.Duration) *statsCache {
@@ -31,9 +32,15 @@ func newStatsCache(engineSocket string, staleThreashold time.Duration) *statsCac
 }
 
 // Caller must hold s.lock
-func (s *statsCache) refreshHA() error {
+func (s *statsCache) refreshIfNeeded() error {
+	age := time.Now().Sub(s.lastRefresh)
+	if age <= s.staleThreashold {
+		return nil
+	}
+
 	s.ha = nil
-	defer func() { s.haTime = time.Now() }()
+	s.cs = nil
+	defer func() { s.lastRefresh = time.Now() }()
 	ctx := ipc.NewTrustedContext(seesaw.SCECU)
 	seesawConn, err := conn.NewSeesawIPC(ctx)
 	if err != nil {
@@ -49,23 +56,42 @@ func (s *statsCache) refreshHA() error {
 		return fmt.Errorf("failed to get HA status: %v", err)
 	}
 	s.ha = ha
-	log.V(1).Infof("refreshed HAStatus: %#v", ha)
+
+	cs, err := seesawConn.ConfigStatus()
+	if err != nil {
+		return fmt.Errorf("failed to get config status: %v", err)
+	}
+	s.cs = cs
+
 	return nil
 }
 
-// getHA returns seesaw HAStatus. May refresh it based if it's older than staleThreashold.
-func (s *statsCache) getHA() (*seesaw.HAStatus, error) {
+// getHAStatus returns seesaw HAStatus. May refresh it based if it's older than staleThreashold.
+func (s *statsCache) getHAStatus() (*seesaw.HAStatus, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	age := time.Now().Sub(s.haTime)
-	if age > s.staleThreashold {
-		if err := s.refreshHA(); err != nil {
-			return nil, err
-		}
+	if err := s.refreshIfNeeded(); err != nil {
+		return nil, err
 	}
+
 	if s.ha == nil {
 		return nil, errors.New("last refresh failed. Retry after stale")
 	}
 	return s.ha, nil
+}
+
+// getConfigStatus returns ConfigStatus. May refresh it based if it's older than staleThreashold.
+func (s *statsCache) getConfigStatus() (*seesaw.ConfigStatus, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if err := s.refreshIfNeeded(); err != nil {
+		return nil, err
+	}
+
+	if s.cs == nil {
+		return nil, errors.New("last refresh failed. Retry after stale")
+	}
+	return s.cs, nil
 }

@@ -17,6 +17,7 @@ import (
 
 type fakeIPC struct {
 	ha  *seesaw.HAStatus
+	cs  *seesaw.ConfigStatus
 	err error
 }
 
@@ -28,23 +29,38 @@ func (f *fakeIPC) HAStatus(ctx *ipc.Context, status *seesaw.HAStatus) error {
 	return nil
 }
 
+func (f *fakeIPC) ConfigStatus(ctx *ipc.Context, status *seesaw.ConfigStatus) error {
+	if f.err != nil {
+		return f.err
+	}
+	*status = *f.cs
+	return nil
+}
+
 const (
-	socketPath = "/tmp/fakeipc"
+	socketPath = "/tmp/fakeipc.socket"
 	threshold  = time.Minute
 )
 
-func checkGetHA(cache *statsCache, expected *seesaw.HAStatus) error {
-	resp, err := cache.getHA()
+func checkGet(cache *statsCache, expectedHA *seesaw.HAStatus, expectedCS *seesaw.ConfigStatus) error {
+	ha, err := cache.getHAStatus()
 	if err != nil {
-		return fmt.Errorf("expect no error but got %v", err)
+		return fmt.Errorf("getHA: expect no error but got %v", err)
 	}
-	if got, want := resp, expected; !reflect.DeepEqual(got, want) {
-		return fmt.Errorf("got %#v but want: %#v", got, want)
+	if got, want := ha, expectedHA; !reflect.DeepEqual(got, want) {
+		return fmt.Errorf("getHA: got %#v but want: %#v", got, want)
+	}
+	cs, err := cache.getConfigStatus()
+	if err != nil {
+		return fmt.Errorf("getConfigStatus: expect no error but got %v", err)
+	}
+	if got, want := cs, expectedCS; !reflect.DeepEqual(got, want) {
+		return fmt.Errorf("getConfigStatus: got %#v but want: %#v", got, want)
 	}
 	return nil
 }
 
-func TestGetHARefresh(t *testing.T) {
+func TestRefresh(t *testing.T) {
 	fakeServer := rpc.NewServer()
 	fakeIPC := &fakeIPC{}
 	fakeServer.RegisterName("SeesawEngine", fakeIPC)
@@ -59,15 +75,18 @@ func TestGetHARefresh(t *testing.T) {
 
 	cache := newStatsCache(socketPath, threshold)
 
-	ha1 := &seesaw.HAStatus{State: seesaw.HABackup}
-	fakeIPC.ha = ha1
-	if err := checkGetHA(cache, ha1); err != nil {
+	ha := &seesaw.HAStatus{State: seesaw.HABackup}
+	fakeIPC.ha = ha
+	cs := &seesaw.ConfigStatus{LastUpdate: time.Date(2000, 2, 1, 12, 30, 0, 0, time.UTC)}
+	fakeIPC.cs = cs
+	if err := checkGet(cache, ha, cs); err != nil {
 		t.Fatalf("checkGetHA failed: %v", err)
 	}
 
 	// verify getHA returns cached status
-	fakeIPC.ha = &seesaw.HAStatus{State: seesaw.HAMaster}
-	if err := checkGetHA(cache, ha1); err != nil {
+	fakeIPC.ha = nil
+	fakeIPC.cs = nil
+	if err := checkGet(cache, ha, cs); err != nil {
 		t.Fatalf("getHA not returning cached HAStatus: %v", err)
 	}
 }
@@ -86,7 +105,7 @@ func TestGetHAError(t *testing.T) {
 	go server.RPCAccept(ln, fakeServer)
 
 	cache := newStatsCache(socketPath, threshold)
-	if _, err := cache.getHA(); err == nil {
+	if _, err := cache.getHAStatus(); err == nil {
 		t.Fatalf("expect error but get nil")
 	}
 }
