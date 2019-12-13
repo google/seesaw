@@ -125,7 +125,7 @@ func (e *ECU) Shutdown() {
 	e.shutdown <- true
 }
 
-// monitoring starts an HTTP server for monitoring purposes.
+// httpsServer starts an HTTPs server.
 func (e *ECU) httpsServer(tlsConfig *tls.Config) *http.Server {
 	handler, err := prom.NewHandler()
 	if err != nil {
@@ -142,7 +142,7 @@ func (e *ECU) httpsServer(tlsConfig *tls.Config) *http.Server {
 		TLSConfig:    tlsConfig,
 	}
 	go func() {
-		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+		if err := s.ListenAndServeTLS(); err != http.ErrServerClosed {
 			log.Fatalf("httpsServer ListenAndServe failed: %v", err)
 		}
 	}()
