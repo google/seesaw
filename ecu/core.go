@@ -151,12 +151,12 @@ func (e *ECU) httpsServer(tlsConfig *tls.Config) *http.Server {
 
 // tlsConfig returns a TLS configuration for use by the ecu server.
 func (e *ECU) tlsConfig() (*tls.Config, error) {
-	rootCACerts := x509.NewCertPool()
+	caCerts := x509.NewCertPool()
 	data, err := ioutil.ReadFile(e.cfg.CACertsFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA cert file: %v", err)
 	}
-	if ok := rootCACerts.AppendCertsFromPEM(data); !ok {
+	if ok := caCerts.AppendCertsFromPEM(data); !ok {
 		return nil, errors.New("failed to load CA certificates")
 	}
 	certs, err := tls.LoadX509KeyPair(e.cfg.ECUCertFile, e.cfg.ECUKeyFile)
@@ -165,7 +165,7 @@ func (e *ECU) tlsConfig() (*tls.Config, error) {
 	}
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{certs},
-		RootCAs:      rootCACerts,
+		ClientCAs:    caCerts,
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 	}
 	return tlsConfig, nil
