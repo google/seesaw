@@ -623,11 +623,6 @@ func (e *Engine) becomeBackup() {
 	if err := e.lbInterface.Down(); err != nil {
 		log.Fatalf("Failed to bring LB interface down: %v", err)
 	}
-
-	// TODO(jsing): Once peer synchronisation is implemented, make this
-	// a time-based expiration that commences once communication with the
-	// peer is lost.
-	e.hcManager.expire()
 }
 
 // markAllocator handles the allocation of marks.

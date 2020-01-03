@@ -43,7 +43,7 @@ type vserver struct {
 
 	fwm        map[seesaw.AF]uint32
 	services   map[serviceKey]*service
-	checks     map[checkKey]*check
+	checks     map[CheckKey]*check
 	active     map[seesaw.IP]bool
 	lbVservers map[seesaw.IP]*seesaw.Vserver // vservers with configured iptables rules
 	vips       map[seesaw.VIP]bool           // unicast VIPs
@@ -219,43 +219,43 @@ func (d *destination) name() string {
 	return fmt.Sprintf("%v/%v", d.service.vserver.String(), d.String())
 }
 
-// checkKey provides a unique key for a check.
-type checkKey struct {
-	vserverIP       seesaw.IP
-	backendIP       seesaw.IP
-	servicePort     uint16
-	serviceProtocol seesaw.IPProto
-	healthcheckMode seesaw.HealthcheckMode
-	healthcheckType seesaw.HealthcheckType
-	healthcheckPort uint16
-	name            string
+// CheckKey provides a unique key for a check.
+type CheckKey struct {
+	VserverIP       seesaw.IP
+	BackendIP       seesaw.IP
+	ServicePort     uint16
+	ServiceProtocol seesaw.IPProto
+	HealthcheckMode seesaw.HealthcheckMode
+	HealthcheckType seesaw.HealthcheckType
+	HealthcheckPort uint16
+	Name            string
 }
 
-// newCheckKey returns an initialised checkKey.
-func newCheckKey(vip, bip seesaw.IP, port uint16, proto seesaw.IPProto, h *config.Healthcheck) checkKey {
-	return checkKey{
-		vserverIP:       vip,
-		backendIP:       bip,
-		servicePort:     port,
-		serviceProtocol: proto,
-		healthcheckMode: h.Mode,
-		healthcheckType: h.Type,
-		healthcheckPort: h.Port,
-		name:            h.Name,
+// newCheckKey returns an initialised CheckKey.
+func newCheckKey(vip, bip seesaw.IP, port uint16, proto seesaw.IPProto, h *config.Healthcheck) CheckKey {
+	return CheckKey{
+		VserverIP:       vip,
+		BackendIP:       bip,
+		ServicePort:     port,
+		ServiceProtocol: proto,
+		HealthcheckMode: h.Mode,
+		HealthcheckType: h.Type,
+		HealthcheckPort: h.Port,
+		Name:            h.Name,
 	}
 }
 
-// String returns the string representation of a checkKey.
-func (c checkKey) String() string {
+// String returns the string representation of a CheckKey.
+func (c CheckKey) String() string {
 	return fmt.Sprintf("%v:%d/%v backend %v:%d/%v %v %v port %d (%s)",
-		c.vserverIP, c.servicePort, c.serviceProtocol,
-		c.backendIP, c.servicePort, c.serviceProtocol,
-		c.healthcheckMode, c.healthcheckType, c.healthcheckPort, c.name)
+		c.VserverIP, c.ServicePort, c.ServiceProtocol,
+		c.BackendIP, c.ServicePort, c.ServiceProtocol,
+		c.HealthcheckMode, c.HealthcheckType, c.HealthcheckPort, c.Name)
 }
 
 // check contains the running state for a healthcheck.
 type check struct {
-	key         checkKey
+	key         CheckKey
 	vserver     *vserver
 	dests       []*destination
 	healthcheck *config.Healthcheck
@@ -264,7 +264,7 @@ type check struct {
 }
 
 // newCheck returns an initialised check.
-func newCheck(key checkKey, v *vserver, h *config.Healthcheck) *check {
+func newCheck(key CheckKey, v *vserver, h *config.Healthcheck) *check {
 	return &check{
 		key:         key,
 		vserver:     v,
@@ -274,7 +274,7 @@ func newCheck(key checkKey, v *vserver, h *config.Healthcheck) *check {
 
 // checkNotification represents a healthcheck status update.
 type checkNotification struct {
-	key         checkKey
+	key         CheckKey
 	description string
 	status      healthcheck.Status
 }
@@ -282,7 +282,7 @@ type checkNotification struct {
 // vserverChecks represents the current set of healthchecks for a vserver.
 type vserverChecks struct {
 	vserverName string
-	checks      map[checkKey]*check
+	checks      map[CheckKey]*check
 }
 
 // expandServices returns a list of services that have been expanded from the
@@ -402,8 +402,8 @@ func (v *vserver) expandDests(svc *service) map[destinationKey]*destination {
 
 // expandChecks returns a list of checks that have been expanded from the
 // vserver configuration.
-func (v *vserver) expandChecks() map[checkKey]*check {
-	checks := make(map[checkKey]*check)
+func (v *vserver) expandChecks() map[CheckKey]*check {
+	checks := make(map[CheckKey]*check)
 	for _, svc := range v.services {
 		for _, dest := range svc.dests {
 			dest.checks = make([]*check, 0)

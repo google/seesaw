@@ -51,11 +51,11 @@ type healthcheckManager struct {
 	markAlloc     *markAllocator
 	marks         map[seesaw.IP]uint32
 	next          healthcheck.Id
-	vserverChecks map[string]map[checkKey]*check // keyed by vserver name
+	vserverChecks map[string]map[CheckKey]*check // keyed by vserver name
 
 	cfgs    map[healthcheck.Id]*healthcheck.Config
 	checks  map[healthcheck.Id]*check
-	ids     map[checkKey]healthcheck.Id
+	ids     map[CheckKey]healthcheck.Id
 	enabled bool
 	lock    sync.RWMutex // Guards cfgs, checks, enabled and ids.
 
@@ -72,7 +72,7 @@ func newHealthcheckManager(e *Engine) *healthcheckManager {
 		markAlloc:     newMarkAllocator(dsrMarkBase, dsrMarkSize),
 		ncc:           ncclient.NewNCC(e.config.NCCSocket),
 		next:          healthcheck.Id((uint64(os.Getpid()) & 0xFFFF) << 48),
-		vserverChecks: make(map[string]map[checkKey]*check),
+		vserverChecks: make(map[string]map[CheckKey]*check),
 		quit:          make(chan bool),
 		stopped:       make(chan bool),
 		vcc:           make(chan vserverChecks, 100),
@@ -92,7 +92,7 @@ func (h *healthcheckManager) configs() map[healthcheck.Id]*healthcheck.Config {
 }
 
 // update updates the healthchecks for a vserver.
-func (h *healthcheckManager) update(vserverName string, checks map[checkKey]*check) {
+func (h *healthcheckManager) update(vserverName string, checks map[CheckKey]*check) {
 	if checks == nil {
 		delete(h.vserverChecks, vserverName)
 	} else {
@@ -123,7 +123,7 @@ func (h *healthcheckManager) shutdown() {
 
 // buildMaps builds the cfgs, checks, and ids maps based on the vserverChecks.
 func (h *healthcheckManager) buildMaps() {
-	allChecks := make(map[checkKey]*check)
+	allChecks := make(map[CheckKey]*check)
 	for _, vchecks := range h.vserverChecks {
 		for k, c := range vchecks {
 			if allChecks[k] == nil {
@@ -139,7 +139,7 @@ func (h *healthcheckManager) buildMaps() {
 	cfgs := h.cfgs
 	checks := h.checks
 	h.lock.RUnlock()
-	newIDs := make(map[checkKey]healthcheck.Id)
+	newIDs := make(map[CheckKey]healthcheck.Id)
 	newCfgs := make(map[healthcheck.Id]*healthcheck.Config)
 	newChecks := make(map[healthcheck.Id]*check)
 
@@ -182,6 +182,7 @@ func (h *healthcheckManager) healthState(n *healthcheck.Notification) error {
 
 	h.lock.RLock()
 	enabled := h.enabled
+	check := h.checks[n.Id]
 	h.lock.RUnlock()
 
 	if !enabled {
@@ -189,7 +190,14 @@ func (h *healthcheckManager) healthState(n *healthcheck.Notification) error {
 		return nil
 	}
 
-	h.engine.syncServer.notify(&SyncNote{Type: SNTHealthcheck, Healthcheck: n})
+	if check == nil {
+		log.Warningf("Unknown healthcheck ID %v", n.Id)
+		return nil
+	}
+	h.engine.syncServer.notify(&SyncNote{Type: SNTHealthcheck, Healthcheck: &SyncHealthCheckNotification{
+		Key:    check.key,
+		Status: n.Status,
+	}})
 
 	return h.queueHealthState(n)
 }
@@ -217,17 +225,44 @@ func (h *healthcheckManager) queueHealthState(n *healthcheck.Notification) error
 	return nil
 }
 
-func (h *healthcheckManager) newConfig(id healthcheck.Id, key checkKey, hc *config.Healthcheck) (*healthcheck.Config, error) {
-	host := key.backendIP.IP()
+// SyncHealthCheckNotification stores a status notification for a healthcheck.
+type SyncHealthCheckNotification struct {
+	Key CheckKey
+	healthcheck.Status
+}
+
+// String returns the string representation for the given notification.
+func (s *SyncHealthCheckNotification) String() string {
+	return fmt.Sprintf("%s %v", s.Key, s.State)
+}
+
+// handleSyncNote handles SyncHealthCheckNotification from the peer.
+func (h *healthcheckManager) handleSyncNote(s *SyncHealthCheckNotification) error {
+	h.lock.RLock()
+	id, ok := h.ids[s.Key]
+	h.lock.RUnlock()
+	if !ok {
+		log.Warningf("Unknown healthcheck key %s", s.Key)
+		return nil
+	}
+
+	return h.queueHealthState(&healthcheck.Notification{
+		Id:     id,
+		Status: s.Status,
+	})
+}
+
+func (h *healthcheckManager) newConfig(id healthcheck.Id, key CheckKey, hc *config.Healthcheck) (*healthcheck.Config, error) {
+	host := key.BackendIP.IP()
 	port := int(hc.Port)
 	mark := 0
 
 	// For DSR we use the VIP address as the target and specify a mark for
 	// the backend.
 	ip := host
-	if key.healthcheckMode == seesaw.HCModeDSR {
-		ip = key.vserverIP.IP()
-		mark = int(h.markBackend(key.backendIP))
+	if key.HealthcheckMode == seesaw.HCModeDSR {
+		ip = key.VserverIP.IP()
+		mark = int(h.markBackend(key.BackendIP))
 	}
 
 	var checker healthcheck.Checker
@@ -283,7 +318,7 @@ func (h *healthcheckManager) newConfig(id healthcheck.Id, key checkKey, hc *conf
 		checker = https
 	case seesaw.HCTypeICMP:
 		// DSR cannot be used with ICMP (at least for now).
-		if key.healthcheckMode != seesaw.HCModePlain {
+		if key.HealthcheckMode != seesaw.HCModePlain {
 			return nil, errors.New("ICMP healthchecks cannot be used with DSR mode")
 		}
 		ping := healthcheck.NewPingChecker(ip)
@@ -465,10 +500,10 @@ func (h *healthcheckManager) pruneMarks() {
 
 	backends := make(map[seesaw.IP]bool)
 	for _, check := range checks {
-		if check.key.healthcheckMode != seesaw.HCModeDSR {
+		if check.key.HealthcheckMode != seesaw.HCModeDSR {
 			continue
 		}
-		backends[check.key.backendIP] = true
+		backends[check.key.BackendIP] = true
 	}
 
 	for ip := range h.marks {

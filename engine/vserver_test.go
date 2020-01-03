@@ -428,11 +428,11 @@ func TestHealthcheckNotification(t *testing.T) {
 	// One healthcheck reports healthy, but there are two other
 	// healthchecks per destination, so services and vservers should
 	// still be inactive.
-	key := checkKey{
-		vserverIP:       seesaw.ParseIP("192.168.255.1"),
-		backendIP:       seesaw.ParseIP("1.1.1.10"),
-		healthcheckPort: 5,
-		name:            "NONE/5_0",
+	key := CheckKey{
+		VserverIP:       seesaw.ParseIP("192.168.255.1"),
+		BackendIP:       seesaw.ParseIP("1.1.1.10"),
+		HealthcheckPort: 5,
+		Name:            "NONE/5_0",
 	}
 	n := &checkNotification{key: key, status: statusHealthy}
 	vserver.handleCheckNotification(n)
@@ -449,13 +449,13 @@ func TestHealthcheckNotification(t *testing.T) {
 	// One backend is unhealthy, all services should still be active.
 	// All services should be healthy and destinations for other backends
 	// should still be healthy.
-	key = checkKey{
-		vserverIP:       seesaw.ParseIP("192.168.255.1"),
-		backendIP:       seesaw.ParseIP("1.1.1.10"),
-		serviceProtocol: seesaw.IPProtoUDP,
-		servicePort:     53,
-		healthcheckPort: 1,
-		name:            "NONE/1_0",
+	key = CheckKey{
+		VserverIP:       seesaw.ParseIP("192.168.255.1"),
+		BackendIP:       seesaw.ParseIP("1.1.1.10"),
+		ServiceProtocol: seesaw.IPProtoUDP,
+		ServicePort:     53,
+		HealthcheckPort: 1,
+		Name:            "NONE/1_0",
 	}
 	n = &checkNotification{key: key, status: statusUnhealthy}
 	vserver.handleCheckNotification(n)
@@ -463,18 +463,18 @@ func TestHealthcheckNotification(t *testing.T) {
 
 	// The other backend is also unhealthy. 192.168.255.1 is anycast, so all
 	// services and the VIP should be inactive. 2012::1 should be unchanged.
-	key.backendIP = seesaw.ParseIP("1.1.1.11")
+	key.BackendIP = seesaw.ParseIP("1.1.1.11")
 	n = &checkNotification{key: key, status: statusUnhealthy}
 	vserver.handleCheckNotification(n)
 	checkStates(4, vserver, t)
 
 	// Both backends are unhealthy for one service. 2012::1 is unicast so the
 	// other service and the VIP should still be active.
-	key.vserverIP = seesaw.ParseIP("2012::1")
-	key.backendIP = seesaw.ParseIP("2012::10")
+	key.VserverIP = seesaw.ParseIP("2012::1")
+	key.BackendIP = seesaw.ParseIP("2012::10")
 	n = &checkNotification{key: key, status: statusUnhealthy}
 	vserver.handleCheckNotification(n)
-	key.backendIP = seesaw.ParseIP("2012::11")
+	key.BackendIP = seesaw.ParseIP("2012::11")
 	n = &checkNotification{key: key, status: statusUnhealthy}
 	vserver.handleCheckNotification(n)
 	checkStates(5, vserver, t)
@@ -504,7 +504,7 @@ func TestWatermarks(t *testing.T) {
 	ipv4 := seesaw.NewIP(backend1.IPv4Addr)
 	ipv6 := seesaw.NewIP(backend1.IPv6Addr)
 	for _, c := range vserver.checks {
-		if c.key.backendIP.Equal(ipv4) || c.key.backendIP.Equal(ipv6) {
+		if c.key.BackendIP.Equal(ipv4) || c.key.BackendIP.Equal(ipv6) {
 			n := &checkNotification{key: c.key, status: statusHealthy}
 			vserver.handleCheckNotification(n)
 		}
@@ -521,7 +521,7 @@ func TestWatermarks(t *testing.T) {
 	}
 	// One backend goes down, one stays up, service should still be up.
 	for _, c := range vserver.checks {
-		if c.key.backendIP.Equal(ipv4) || c.key.backendIP.Equal(ipv6) {
+		if c.key.BackendIP.Equal(ipv4) || c.key.BackendIP.Equal(ipv6) {
 			n := &checkNotification{key: c.key, status: statusUnhealthy}
 			vserver.handleCheckNotification(n)
 		}
@@ -531,7 +531,7 @@ func TestWatermarks(t *testing.T) {
 	}
 	// Remaining dests go unhealthy, service should go down.
 	for _, c := range vserver.checks {
-		if !c.key.backendIP.Equal(ipv4) && !c.key.backendIP.Equal(ipv6) {
+		if !c.key.BackendIP.Equal(ipv4) && !c.key.BackendIP.Equal(ipv6) {
 			n := &checkNotification{key: c.key, status: statusUnhealthy}
 			vserver.handleCheckNotification(n)
 		}
@@ -551,7 +551,7 @@ func TestWatermarks(t *testing.T) {
 	}
 	vserver.handleConfigUpdate(&vsConfig)
 	for _, c := range vserver.checks {
-		if c.key.backendIP.Equal(ipv4) || c.key.backendIP.Equal(ipv6) {
+		if c.key.BackendIP.Equal(ipv4) || c.key.BackendIP.Equal(ipv6) {
 			n := &checkNotification{key: c.key, status: statusHealthy}
 			vserver.handleCheckNotification(n)
 		}
@@ -593,7 +593,7 @@ func TestWatermarks(t *testing.T) {
 	for _, b := range vsConfig.Backends {
 		t.Logf("Taking down %s (%d)", b.Hostname, i)
 		for _, c := range vserver.checks {
-			if b.IPv4Addr.Equal(c.key.backendIP.IP()) || b.IPv6Addr.Equal(c.key.backendIP.IP()) {
+			if b.IPv4Addr.Equal(c.key.BackendIP.IP()) || b.IPv6Addr.Equal(c.key.BackendIP.IP()) {
 				n := &checkNotification{key: c.key, status: statusUnhealthy}
 				vserver.handleCheckNotification(n)
 			}
@@ -618,7 +618,7 @@ func TestWatermarks(t *testing.T) {
 	for _, b := range vsConfig.Backends {
 		t.Logf("Bringing up %s (%d)", b.Hostname, i)
 		for _, c := range vserver.checks {
-			if b.IPv4Addr.Equal(c.key.backendIP.IP()) || b.IPv6Addr.Equal(c.key.backendIP.IP()) {
+			if b.IPv4Addr.Equal(c.key.BackendIP.IP()) || b.IPv6Addr.Equal(c.key.BackendIP.IP()) {
 				n := &checkNotification{key: c.key, status: statusHealthy}
 				vserver.handleCheckNotification(n)
 			}
@@ -1056,7 +1056,7 @@ func checkAllUp(v *vserver) []error {
 }
 
 var (
-	vsUpdateCheckKey1 = checkKey{
+	vsUpdateCheckKey1 = CheckKey{
 		seesaw.ParseIP("192.168.255.1"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -1066,7 +1066,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey2 = checkKey{
+	vsUpdateCheckKey2 = CheckKey{
 		seesaw.ParseIP("192.168.255.1"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -1076,7 +1076,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey3 = checkKey{
+	vsUpdateCheckKey3 = CheckKey{
 		seesaw.ParseIP("192.168.255.1"),
 		seesaw.ParseIP("192.168.37.3"),
 		53,
@@ -1086,7 +1086,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey4 = checkKey{
+	vsUpdateCheckKey4 = CheckKey{
 		seesaw.ParseIP("192.168.255.1"),
 		seesaw.ParseIP("192.168.37.3"),
 		53,
@@ -1096,7 +1096,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey5 = checkKey{
+	vsUpdateCheckKey5 = CheckKey{
 		seesaw.ParseIP("192.168.255.99"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -1106,7 +1106,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey6 = checkKey{
+	vsUpdateCheckKey6 = CheckKey{
 		seesaw.ParseIP("192.168.255.99"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -1116,7 +1116,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey7 = checkKey{
+	vsUpdateCheckKey7 = CheckKey{
 		seesaw.ParseIP("192.168.36.1"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -1126,7 +1126,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey8 = checkKey{
+	vsUpdateCheckKey8 = CheckKey{
 		seesaw.ParseIP("192.168.36.1"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -1136,7 +1136,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey9 = checkKey{
+	vsUpdateCheckKey9 = CheckKey{
 		seesaw.ParseIP("192.168.36.1"),
 		seesaw.ParseIP("192.168.37.3"),
 		53,
@@ -1146,7 +1146,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey10 = checkKey{
+	vsUpdateCheckKey10 = CheckKey{
 		seesaw.ParseIP("192.168.36.1"),
 		seesaw.ParseIP("192.168.37.3"),
 		53,
@@ -1156,7 +1156,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	vsUpdateCheckKey11 = checkKey{
+	vsUpdateCheckKey11 = CheckKey{
 		seesaw.ParseIP("192.168.255.99"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -1166,7 +1166,7 @@ var (
 		53,
 		"DNS/53_0",
 	}
-	vsUpdateCheckKey12 = checkKey{
+	vsUpdateCheckKey12 = CheckKey{
 		seesaw.ParseIP("192.168.255.99"),
 		seesaw.ParseIP("192.168.37.2"),
 		0,
@@ -1254,7 +1254,7 @@ var updateTests = []struct {
 	file             string
 	notifications    []*checkNotification
 	expectedServices []*service
-	expectedChecks   map[checkKey]*check
+	expectedChecks   map[CheckKey]*check
 	expectAllUp      bool
 	expectAllDown    bool
 }{
@@ -1267,7 +1267,7 @@ var updateTests = []struct {
 				status: statusHealthy,
 			},
 		},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey1: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1289,7 +1289,7 @@ var updateTests = []struct {
 		desc:          "anycast add service",
 		file:          "vserver_update_anycast_2.pb",
 		notifications: []*checkNotification{},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey1: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1339,7 +1339,7 @@ var updateTests = []struct {
 				status: statusHealthy,
 			},
 		},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey1: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1376,7 +1376,7 @@ var updateTests = []struct {
 		desc:          "anycast modify service and remove backend",
 		file:          "vserver_update_anycast_3.pb",
 		notifications: []*checkNotification{},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey1: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1420,7 +1420,7 @@ var updateTests = []struct {
 				active:     false,
 			},
 		},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey5: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1450,7 +1450,7 @@ var updateTests = []struct {
 				active:     false,
 			},
 		},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey11: {
 				healthcheck: &vsUpdateHealthcheck2,
 			},
@@ -1480,7 +1480,7 @@ var updateTests = []struct {
 				active:     false,
 			},
 		},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey11: {
 				healthcheck: &vsUpdateHealthcheck4,
 			},
@@ -1501,7 +1501,7 @@ var updateTests = []struct {
 				status: statusHealthy,
 			},
 		},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey7: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1523,7 +1523,7 @@ var updateTests = []struct {
 		desc:          "unicast add service",
 		file:          "vserver_update_unicast_2.pb",
 		notifications: []*checkNotification{},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey7: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1568,7 +1568,7 @@ var updateTests = []struct {
 				status: statusHealthy,
 			},
 		},
-		expectedChecks: map[checkKey]*check{},
+		expectedChecks: map[CheckKey]*check{},
 		expectedServices: []*service{
 			{
 				serviceKey: updateServiceKey1,
@@ -1600,7 +1600,7 @@ var updateTests = []struct {
 				status: statusHealthy,
 			},
 		},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey7: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1631,7 +1631,7 @@ var updateTests = []struct {
 		desc:          "unicast change to NAT",
 		file:          "vserver_update_unicast_5.pb",
 		notifications: []*checkNotification{},
-		expectedChecks: map[checkKey]*check{
+		expectedChecks: map[CheckKey]*check{
 			vsUpdateCheckKey7: {
 				healthcheck: &vsUpdateHealthcheck1,
 			},
@@ -1672,7 +1672,7 @@ func applyConfig(vserver *vserver, file, clusterName, serviceName string) error 
 	return nil
 }
 
-func compareChecks(got, want map[checkKey]*check) []error {
+func compareChecks(got, want map[CheckKey]*check) []error {
 	errs := make([]error, 0)
 	if len(got) != len(want) {
 		errs = append(errs, fmt.Errorf("Got %d checks, want %d", len(got), len(want)))

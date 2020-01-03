@@ -75,52 +75,52 @@ var (
 		},
 	}
 
-	key1 = checkKey{
-		vserverIP:       seesaw.ParseIP("1.1.1.1"),
-		backendIP:       seesaw.ParseIP("1.1.1.2"),
-		healthcheckType: seesaw.HCTypeHTTP,
-		healthcheckPort: 3901,
-		name:            "HTTP/3901_0",
+	key1 = CheckKey{
+		VserverIP:       seesaw.ParseIP("1.1.1.1"),
+		BackendIP:       seesaw.ParseIP("1.1.1.2"),
+		HealthcheckType: seesaw.HCTypeHTTP,
+		HealthcheckPort: 3901,
+		Name:            "HTTP/3901_0",
 	}
 
-	key2 = checkKey{
-		vserverIP:       seesaw.ParseIP("2012::cafe"),
-		backendIP:       seesaw.ParseIP("2012::cafd"),
-		healthcheckType: seesaw.HCTypeHTTP,
-		healthcheckPort: 3901,
-		name:            "HTTP/3901_0",
+	key2 = CheckKey{
+		VserverIP:       seesaw.ParseIP("2012::cafe"),
+		BackendIP:       seesaw.ParseIP("2012::cafd"),
+		HealthcheckType: seesaw.HCTypeHTTP,
+		HealthcheckPort: 3901,
+		Name:            "HTTP/3901_0",
 	}
 
-	key3 = checkKey{
-		vserverIP:       seesaw.ParseIP("1.1.1.1"),
-		backendIP:       seesaw.ParseIP("1.1.1.2"),
-		servicePort:     80,
-		serviceProtocol: 6,
-		healthcheckType: seesaw.HCTypeTCP,
-		healthcheckPort: 81,
-		name:            "TCP/81_0",
+	key3 = CheckKey{
+		VserverIP:       seesaw.ParseIP("1.1.1.1"),
+		BackendIP:       seesaw.ParseIP("1.1.1.2"),
+		ServicePort:     80,
+		ServiceProtocol: 6,
+		HealthcheckType: seesaw.HCTypeTCP,
+		HealthcheckPort: 81,
+		Name:            "TCP/81_0",
 	}
 
-	key4 = checkKey{
-		vserverIP:       seesaw.ParseIP("2012::cafe"),
-		backendIP:       seesaw.ParseIP("2012::cafd"),
-		servicePort:     80,
-		serviceProtocol: 6,
-		healthcheckType: seesaw.HCTypeTCP,
-		healthcheckPort: 81,
-		name:            "TCP/81_0",
+	key4 = CheckKey{
+		VserverIP:       seesaw.ParseIP("2012::cafe"),
+		BackendIP:       seesaw.ParseIP("2012::cafd"),
+		ServicePort:     80,
+		ServiceProtocol: 6,
+		HealthcheckType: seesaw.HCTypeTCP,
+		HealthcheckPort: 81,
+		Name:            "TCP/81_0",
 	}
 )
 
 var hcTests = []struct {
 	desc   string
 	in     *config.Cluster
-	expect map[checkKey]*healthcheck.Config
+	expect map[CheckKey]*healthcheck.Config
 }{
 	{
 		"Empty",
 		&config.Cluster{},
-		make(map[checkKey]*healthcheck.Config),
+		make(map[CheckKey]*healthcheck.Config),
 	},
 	{
 		"One Vserver HC, 1 VserverEntry HC, 1 enabled backend, 1 disabled backend",
@@ -141,7 +141,7 @@ var hcTests = []struct {
 				},
 			},
 		},
-		map[checkKey]*healthcheck.Config{
+		map[CheckKey]*healthcheck.Config{
 			key1: {
 				Interval: 100 * time.Second,
 				Timeout:  50 * time.Second,
@@ -214,15 +214,15 @@ var hcTests = []struct {
 	},
 }
 
-func joinMaps(m1 map[checkKey]healthcheck.Id, m2 map[healthcheck.Id]*healthcheck.Config) map[checkKey]*healthcheck.Config {
-	m3 := make(map[checkKey]*healthcheck.Config)
+func joinMaps(m1 map[CheckKey]healthcheck.Id, m2 map[healthcheck.Id]*healthcheck.Config) map[CheckKey]*healthcheck.Config {
+	m3 := make(map[CheckKey]*healthcheck.Config)
 	for k, id := range m1 {
 		m3[k] = m2[id]
 	}
 	return m3
 }
 
-func clearIDs(m map[checkKey]*healthcheck.Config) {
+func clearIDs(m map[CheckKey]*healthcheck.Config) {
 	for _, v := range m {
 		v.Id = 0
 	}
@@ -300,7 +300,7 @@ func TestHealthchecks(t *testing.T) {
 }
 
 var (
-	hcUpdateCheckKey1 = checkKey{
+	hcUpdateCheckKey1 = CheckKey{
 		seesaw.ParseIP("192.168.36.1"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -310,7 +310,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	hcUpdateCheckKey2 = checkKey{
+	hcUpdateCheckKey2 = CheckKey{
 		seesaw.ParseIP("192.168.36.1"),
 		seesaw.ParseIP("192.168.37.3"),
 		53,
@@ -320,7 +320,7 @@ var (
 		53,
 		"HTTP/53_0",
 	}
-	hcUpdateCheckKey3 = checkKey{
+	hcUpdateCheckKey3 = CheckKey{
 		seesaw.ParseIP("192.168.36.1"),
 		seesaw.ParseIP("192.168.37.2"),
 		53,
@@ -330,7 +330,7 @@ var (
 		16767,
 		"HTTP/16767_0",
 	}
-	hcUpdateCheckKey4 = checkKey{
+	hcUpdateCheckKey4 = CheckKey{
 		seesaw.ParseIP("192.168.36.1"),
 		seesaw.ParseIP("192.168.37.3"),
 		53,
@@ -379,11 +379,11 @@ var (
 
 var hcUpdateTests = []struct {
 	desc   string
-	checks map[checkKey]*check
+	checks map[CheckKey]*check
 }{
 	{
 		"initial healthchecks",
-		map[checkKey]*check{
+		map[CheckKey]*check{
 			hcUpdateCheckKey1: {
 				healthcheck: &hcUpdateHealthcheck1,
 			},
@@ -394,7 +394,7 @@ var hcUpdateTests = []struct {
 	},
 	{
 		"change of healthcheck type/port",
-		map[checkKey]*check{
+		map[CheckKey]*check{
 			hcUpdateCheckKey3: {
 				healthcheck: &hcUpdateHealthcheck2,
 			},
@@ -405,7 +405,7 @@ var hcUpdateTests = []struct {
 	},
 	{
 		"change to healthcheck configuration",
-		map[checkKey]*check{
+		map[CheckKey]*check{
 			hcUpdateCheckKey3: {
 				healthcheck: &hcUpdateHealthcheck3,
 			},
@@ -416,7 +416,7 @@ var hcUpdateTests = []struct {
 	},
 	{
 		"remove healthchecks",
-		map[checkKey]*check{},
+		map[CheckKey]*check{},
 	},
 }
 
