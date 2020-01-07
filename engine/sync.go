@@ -29,7 +29,6 @@ import (
 
 	"github.com/google/seesaw/common/seesaw"
 	"github.com/google/seesaw/engine/config"
-	"github.com/google/seesaw/healthcheck"
 
 	log "github.com/golang/glog"
 )
@@ -82,7 +81,7 @@ type SyncNote struct {
 	Type SyncNoteType
 
 	Config      *config.Notification
-	Healthcheck *healthcheck.Notification
+	Healthcheck *SyncHealthCheckNotification
 
 	BackendOverride     *seesaw.BackendOverride
 	DestinationOverride *seesaw.DestinationOverride
@@ -520,7 +519,11 @@ func (sc *syncClient) handleConfigUpdate(sn *SyncNote) {
 // handleHealthcheck handles a healthcheck notification.
 func (sc *syncClient) handleHealthcheck(sn *SyncNote) {
 	log.V(1).Infoln("Sync client received healthcheck notification")
-	// TODO(jsing): Implement.
+	if sn.Healthcheck == nil {
+		log.Errorf("Healthcheck is nil: %v", sn)
+		return
+	}
+	sc.engine.hcManager.handleSyncNote(sn.Healthcheck)
 }
 
 // handleOverride handles an override notification.
