@@ -175,3 +175,12 @@ func (c *engineRPC) OverrideVserver(vserver *seesaw.VserverOverride) error {
 func (c *engineRPC) Failover() error {
 	return c.client.Call("SeesawECU.Failover", c.ctx, nil)
 }
+
+// EngineStatus requests current status of Seesaw engine.
+func (c *engineRPC) EngineStatus() (*seesaw.EngineStatus, error) {
+	var e seesaw.EngineStatus
+	if err := c.client.Call("SeesawEngine.EngineStatus", c.ctx, &e); err != nil {
+		return nil, err
+	}
+	return &e, nil
+}

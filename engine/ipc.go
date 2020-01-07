@@ -20,6 +20,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/seesaw/common/ipc"
 	"github.com/google/seesaw/common/seesaw"
@@ -439,4 +440,19 @@ func (s *SeesawEngine) Backends(ctx *ipc.Context, reply *int) error {
 
 	// TODO(jsing): Implement this function.
 	return fmt.Errorf("Unimplemented")
+}
+
+// EngineStatus returns status information about this engine.
+func (s *SeesawEngine) EngineStatus(ctx *ipc.Context, reply *seesaw.EngineStatus) error {
+	s.trace("EngineStatus", ctx)
+	if ctx == nil {
+		return errors.New("context is nil")
+	}
+
+	if !ctx.IsTrusted() {
+		return errors.New("insufficient access")
+	}
+
+	reply.Uptime = time.Since(s.engine.startTime)
+	return nil
 }

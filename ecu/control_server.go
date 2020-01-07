@@ -15,13 +15,13 @@ import (
 
 type controlServer struct {
 	engineSocket string
-	stats        *statsCache
+	sc           *statsCache
 }
 
-func newControlServer(engineSocket string, stats *statsCache) *controlServer {
+func newControlServer(engineSocket string, sc *statsCache) *controlServer {
 	return &controlServer{
 		engineSocket: engineSocket,
-		stats:        stats,
+		sc:           sc,
 	}
 }
 
@@ -77,13 +77,13 @@ func (c *controlServer) GetStats(ctx context.Context, in *ecupb.GetStatsRequest)
 		return nil, fmt.Errorf("os.Hostname() failed: %v", err)
 	}
 	out.Hostname = hn
-	ha, err := c.stats.getHAStatus()
+	ha, err := c.sc.GetHAStatus()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get HA status: %v", err)
 	}
 	out.HaState = haStateToProto(ha.State)
 
-	cs, err := c.stats.getConfigStatus()
+	cs, err := c.sc.GetConfigStatus()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Config status: %v", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/google/seesaw/common/seesaw"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -16,10 +17,24 @@ func (l errLogger) Println(v ...interface{}) {
 	log.Errorln(v...)
 }
 
+type statsProvider interface {
+	GetHAStatus() (*seesaw.HAStatus, error)
+	GetConfigStatus() (*seesaw.ConfigStatus, error)
+	GetVservers() (map[string]*seesaw.Vserver, error)
+	GetEngineStatus() (*seesaw.EngineStatus, error)
+}
+
 // NewHandler creates an http.Handler with a list of prometheus collectors registered.
-func NewHandler() (http.Handler, error) {
+func NewHandler(sp statsProvider) (http.Handler, error) {
 	factories := map[string]func() (prometheus.Collector, error){
 		"mem": newMemCollector,
+		"cpu": newCPUCollector,
+		"service": func() (prometheus.Collector, error) {
+			return newServiceCollector(sp)
+		},
+		"control_plane": func() (prometheus.Collector, error) {
+			return newCPCollector(sp)
+		},
 	}
 	return promHandler(factories)
 }

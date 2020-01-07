@@ -51,6 +51,8 @@ type EngineConn interface {
 	OverrideVserver(override *seesaw.VserverOverride) error
 
 	Failover() error
+
+	EngineStatus() (*seesaw.EngineStatus, error)
 }
 
 var engineConns = make(map[string]func(ctx *ipc.Context) EngineConn)

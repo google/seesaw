@@ -10,23 +10,22 @@ import (
 	"github.com/prometheus/procfs"
 )
 
-func TestMemCollector(t *testing.T) {
+func TestCPUCollector(t *testing.T) {
 	fs, err := procfs.NewFS("testdata/proc")
 	if err != nil {
 		t.Fatalf("procfs.NewFS(testdata/proc) failed: %v", err)
 	}
 
-	c, err := newMemCollectorWithFS(fs)
+	c, err := newCPUCollectorWithFS(fs)
 	if err != nil {
-		t.Fatalf("newMemCollectorWithFS failed: %v", err)
+		t.Fatalf("newCPUCollectorWithFS failed: %v", err)
 	}
 	got, err := testutil.DoCollect(c)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
 	}
 	expected := []string{
-		fmt.Sprintf("%s 1.024e+09", prometheus.BuildFQName(namespace, "", "memory_used_bytes")),
-		fmt.Sprintf("%s 1.024e+10", prometheus.BuildFQName(namespace, "", "memory_total_bytes")),
+		fmt.Sprintf("%s 0.06375", prometheus.BuildFQName(namespace, "", "cpu_usage_time")),
 	}
 	for _, e := range expected {
 		if !strings.Contains(got, e) {

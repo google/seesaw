@@ -554,3 +554,8 @@ type Backend struct {
 type BackendMap struct {
 	Backends map[string]*Backend
 }
+
+// EngineStatus specifies the status of a Seesaw engine.
+type EngineStatus struct {
+	Uptime time.Duration
+}
