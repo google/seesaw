@@ -902,10 +902,6 @@ Copyright 2012 Matt T. Proud (matt.proud@gmail.com)
 
 # vendor/github.com/miekg/dns/LICENSE
 
-Extensions of the original work are copyright (c) 2011 Miek Gieben
-
-As this is fork of the official Go code the same license applies:
-
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -934,6 +930,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+As this is fork of the official Go code the same license applies.
+Extensions of the original work are copyright (c) 2011 Miek Gieben
 
 # vendor/github.com/prometheus/client_golang/LICENSE
 
