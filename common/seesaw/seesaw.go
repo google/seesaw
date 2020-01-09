@@ -466,6 +466,8 @@ type Vserver struct {
 	Enabled       bool
 	ConfigEnabled bool
 	Warnings      []string
+	// The time when the oldest healthcheck was done.
+	OldestHealthCheck time.Time
 }
 
 // VserverEntry represents a port and protocol combination for a Vserver.

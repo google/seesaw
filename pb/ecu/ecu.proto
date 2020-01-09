@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package ecu;
 
-import "google/protobuf/timestamp.proto";
-
 // The SeesawECU service definition
 service SeesawECU {
   // Calling Failover() on any of the LB instance triggers a switch of master.
@@ -37,6 +35,14 @@ message SeesawStats {
   }
   HAState ha_state = 2;
 
-  // The time when current config is pushsed.
-  google.protobuf.Timestamp config_timestamp = 3;
+   // If current instance is ready to serve traffic.
+  Readiness readiness = 3;
+}
+
+message Readiness {
+  bool is_ready = 1;
+  // A string message decribing why it's not ready.
+  // Not filled if ready.
+  // For logging and debugging purpose.
+  string reason = 2;
 }
