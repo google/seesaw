@@ -261,16 +261,18 @@ func (n *Node) doMasterTasks() seesaw.HAState {
 				advert.VRID, n.VRID)
 			return seesaw.HAMaster
 		}
-		if advert.Priority == n.Priority {
-			// TODO(angusc): RFC 5798 says we should compare IP addresses at this point.
-			log.Warningf("doMasterTasks: ignoring advertisement with my priority (%v)", advert.Priority)
-			return seesaw.HAMaster
-		}
-		if advert.Priority > n.Priority {
-			log.Infof("doMasterTasks: peer priority (%v) > my priority (%v) - becoming BACKUP",
-				advert.Priority, n.Priority)
-			n.lastMasterAdvertTime = time.Now()
-			return seesaw.HABackup
+		if n.Preempt {
+			if advert.Priority == n.Priority {
+				// TODO(angusc): RFC 5798 says we should compare IP addresses at this point.
+				log.Warningf("doMasterTasks: ignoring advertisement with my priority (%v)", advert.Priority)
+				return seesaw.HAMaster
+			}
+			if advert.Priority > n.Priority {
+				log.Infof("doMasterTasks: peer priority (%v) > my priority (%v) - becoming BACKUP",
+					advert.Priority, n.Priority)
+				n.lastMasterAdvertTime = time.Now()
+				return seesaw.HABackup
+			}
 		}
 
 	case <-n.shutdownChannel:

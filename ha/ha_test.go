@@ -71,10 +71,11 @@ func TestNoPeer(t *testing.T) {
 
 func TestHighPriorityPeer(t *testing.T) {
 	node := newTestNode()
+	node.NodeConfig.Preempt = true
 	// no incoming advertisements - we should become master
 	node.runOnce()
 	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+		t.Fatalf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
 	}
 
 	// incoming advertisement from higher priority peer
@@ -83,13 +84,13 @@ func TestHighPriorityPeer(t *testing.T) {
 	node.queueAdvertisement(&advert)
 	node.runOnce()
 	if node.state() != seesaw.HABackup {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HABackup, node.state())
+		t.Fatalf("Expected state to be %v but was %v", seesaw.HABackup, node.state())
 	}
 
 	// no incoming advertisements (i.e. peer is dead)
 	node.runOnce()
 	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+		t.Fatalf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
 	}
 
 	// clean up
@@ -98,6 +99,7 @@ func TestHighPriorityPeer(t *testing.T) {
 
 func TestLowPriorityPeer(t *testing.T) {
 	node := newTestNode()
+	node.NodeConfig.Preempt = true
 	node.runOnce()
 	if node.state() != seesaw.HAMaster {
 		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
@@ -108,6 +110,28 @@ func TestLowPriorityPeer(t *testing.T) {
 	node.runOnce()
 	if node.state() != seesaw.HAMaster {
 		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	}
+
+	// clean up
+	node.becomeBackup()
+}
+
+func TestPreemptyDisabled(t *testing.T) {
+	node := newTestNode()
+	node.NodeConfig.Preempt = false
+	// no incoming advertisements - we should become master
+	node.runOnce()
+	if node.state() != seesaw.HAMaster {
+		t.Fatalf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	}
+
+	// incoming advertisement from higher priority peer
+	advert := vrrpTestAdvert
+	advert.Priority = 255
+	node.queueAdvertisement(&advert)
+	node.runOnce()
+	if node.state() != seesaw.HAMaster {
+		t.Fatalf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
 	}
 
 	// clean up
