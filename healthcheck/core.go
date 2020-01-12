@@ -309,7 +309,7 @@ func (hc *Check) healthcheck() {
 	if !result.Success {
 		status = "FAILURE"
 	}
-	log.Infof("%d: (%s) %s: %v", hc.Id, hc, status, result)
+	log.V(1).Infof("%d: (%s) %s: %v", hc.Id, hc, status, result)
 
 	hc.lock.Lock()
 
@@ -328,7 +328,7 @@ func (hc *Check) healthcheck() {
 	}
 
 	if hc.state == StateHealthy && hc.failed > 0 && hc.failed <= uint64(hc.Config.Retries) {
-		log.Infof("%d: Failure %d - retrying...", hc.Id, hc.failed)
+		log.V(1).Infof("%d: Failure %d - retrying...", hc.Id, hc.failed)
 		state = StateHealthy
 	}
 	transition := (hc.state != state)
@@ -495,13 +495,13 @@ func (s *Server) getHealthchecks() (*Checks, error) {
 // manager via the configs channel.
 func (s *Server) updater() {
 	for {
-		log.Info("Getting healthchecks from engine...")
+		log.V(1).Info("Getting healthchecks from engine...")
 		checks, err := s.getHealthchecks()
 		if err != nil {
 			log.Error(err)
 			time.Sleep(5 * time.Second)
 		} else {
-			log.Infof("Engine returned %d healthchecks", len(checks.Configs))
+			log.V(1).Infof("Engine returned %d healthchecks", len(checks.Configs))
 			s.configs <- checks.Configs
 			time.Sleep(15 * time.Second)
 		}

@@ -181,10 +181,10 @@ func (n *Notifier) configCheck() {
 		note.MetadataOnly = true
 	}
 
-	log.Infof("Sending config update notification")
+	log.V(1).Infof("Sending config update notification")
 	n.last = note
 	n.outgoing <- *note
-	log.Infof("Sent config update notification")
+	log.V(1).Infof("Sent config update notification")
 
 	if s != SourceDisk {
 		if err := saveConfig(note.protobuf, n.engineCfg.ClusterFile, !note.MetadataOnly); err != nil {

@@ -349,7 +349,7 @@ func (e *Engine) manager() {
 	for {
 		select {
 		case n := <-e.notifier.C:
-			log.Infof("Received cluster config notification; %v", &n)
+			log.V(1).Infof("Received cluster config notification; %v", &n)
 
 			e.syncServer.notify(&SyncNote{Type: SNTConfigUpdate})
 
@@ -358,9 +358,11 @@ func (e *Engine) manager() {
 			e.clusterLock.Unlock()
 
 			if n.MetadataOnly {
-				log.Infof("Only metadata changes found, processing complete.")
+				log.V(1).Infof("Only metadata changes found, processing complete.")
 				continue
 			}
+
+			log.Infof("Processing new config")
 
 			if ha, err := e.haConfig(); err != nil {
 				log.Errorf("Manager failed to determine haConfig: %v", err)

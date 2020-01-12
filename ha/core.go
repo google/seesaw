@@ -368,7 +368,7 @@ func (n *Node) sendAdvertisements() {
 			}
 
 			sendCount := atomic.AddUint64(&n.sendCount, 1)
-			if sendCount%20 == 0 {
+			if sendCount%10000 == 0 {
 				log.Infof("sendAdvertisements: Sent %d advertisements", sendCount)
 			}
 
@@ -396,7 +396,7 @@ func (n *Node) receiveAdvertisements() {
 			}
 		} else if advert != nil {
 			receiveCount := atomic.AddUint64(&n.receiveCount, 1)
-			if receiveCount%20 == 0 {
+			if receiveCount%10000 == 0 {
 				log.Infof("receiveAdvertisements: Received %d advertisements", receiveCount)
 			}
 			n.queueAdvertisement(advert)
