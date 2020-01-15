@@ -32,6 +32,8 @@ sed -i '/ swap / s/^/#/' /etc/fstab
 systemctl disable systemd-networkd-wait-online.service
 # Add folder for Kubernetes certificate.
 mkdir -p /etc/kubernetes/pki
+# logrotate by default uses syslog group which doesn't exist in our image.
+sed -i 's/^su root syslog/su root adm/' /etc/logrotate.conf
 
 # prepare Seesaw environment
 apt-get install -y \
