@@ -815,6 +815,19 @@ func (v *vserver) snapshot() *seesaw.Vserver {
 		ss := s.snapshot()
 		sv.Services[ss.ServiceKey] = ss
 	}
+	var oldest time.Time
+	for _, check := range v.checks {
+		lc := check.status.LastCheck
+		if lc.IsZero() {
+			oldest = lc
+			break
+		}
+		if oldest.IsZero() || lc.Before(oldest) {
+			oldest = lc
+		}
+	}
+	sv.OldestHealthCheck = oldest
+
 	return sv
 }
 

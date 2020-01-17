@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/google/seesaw/common/conn"
 	"github.com/google/seesaw/common/ipc"
 	"github.com/google/seesaw/common/seesaw"
@@ -15,13 +15,13 @@ import (
 
 type controlServer struct {
 	engineSocket string
-	stats        *statsCache
+	sc           *statsCache
 }
 
-func newControlServer(engineSocket string, stats *statsCache) *controlServer {
+func newControlServer(engineSocket string, sc *statsCache) *controlServer {
 	return &controlServer{
 		engineSocket: engineSocket,
-		stats:        stats,
+		sc:           sc,
 	}
 }
 
@@ -69,6 +69,54 @@ func haStateToProto(state seesaw.HAState) ecupb.SeesawStats_HAState {
 	}
 }
 
+const (
+	cfgReadinessThreshold = time.Minute * 2
+	hcReadinessThreshold  = time.Minute * 2
+)
+
+func isReady(stats *statsCache) (string, error) {
+	ha, err := stats.GetHAStatus()
+	if err != nil {
+		return "", fmt.Errorf("failed to get HA status: %v", err)
+	}
+	state := ha.State
+	if state != seesaw.HABackup && state != seesaw.HAMaster {
+		return fmt.Sprintf("HAState %q is neither master or backup.", state.String()), nil
+	}
+
+	cs, err := stats.GetConfigStatus()
+	if err != nil {
+		return "", fmt.Errorf("failed to get Config status: %v", err)
+	}
+	if cs.LastUpdate.IsZero() {
+		return fmt.Sprintf("No config pushed."), nil
+	}
+	now := time.Now()
+	if now.Sub(cs.LastUpdate) >= cfgReadinessThreshold {
+		return fmt.Sprintf("Last config push is too old (last vs now): %s vs %s", cs.LastUpdate.UTC().Format(time.UnixDate), now.UTC().Format(time.UnixDate)), nil
+	}
+
+	vservers, err := stats.GetVservers()
+	if err != nil {
+		return "", fmt.Errorf("failed to get Vservers: %v", err)
+	}
+	if len(vservers) == 0 {
+		// If there is no service configured, consider it's ready.
+		return "", nil
+	}
+	now = time.Now()
+	for name, vs := range vservers {
+		if vs.OldestHealthCheck.IsZero() {
+			return fmt.Sprintf("%q: Healtheck is not done yet.", name), nil
+		}
+		if now.Sub(vs.OldestHealthCheck) >= hcReadinessThreshold {
+			return fmt.Sprintf("%q: Oldest healthcheck is too old (last vs now): %s vs %s", name, vs.OldestHealthCheck.UTC().Format(time.UnixDate), now.UTC().Format(time.UnixDate)), nil
+		}
+	}
+
+	return "", nil
+}
+
 // GetStats implements SeesawECU.GetStats
 func (c *controlServer) GetStats(ctx context.Context, in *ecupb.GetStatsRequest) (*ecupb.SeesawStats, error) {
 	out := &ecupb.SeesawStats{}
@@ -77,22 +125,21 @@ func (c *controlServer) GetStats(ctx context.Context, in *ecupb.GetStatsRequest)
 		return nil, fmt.Errorf("os.Hostname() failed: %v", err)
 	}
 	out.Hostname = hn
-	ha, err := c.stats.getHAStatus()
+	ha, err := c.sc.GetHAStatus()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get HA status: %v", err)
 	}
 	out.HaState = haStateToProto(ha.State)
 
-	cs, err := c.stats.getConfigStatus()
+	reason, err := isReady(c.sc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Config status: %v", err)
+		return nil, err
 	}
-	if !cs.LastUpdate.IsZero() {
-		ts, err := ptypes.TimestampProto(cs.LastUpdate)
-		if err != nil {
-			return nil, fmt.Errorf("invalid timestamp: %v", err)
-		}
-		out.ConfigTimestamp = ts
+
+	out.Readiness = &ecupb.Readiness{
+		IsReady: len(reason) == 0,
+		Reason:  reason,
 	}
+
 	return out, nil
 }

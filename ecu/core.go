@@ -104,7 +104,7 @@ func (e *ECU) Run() {
 
 	cache := newStatsCache(e.cfg.EngineSocket, time.Second)
 
-	httpsServer := e.httpsServer(tlsConfig)
+	httpsServer := e.httpsServer(tlsConfig, cache)
 
 	healthz := newHealthzServer(e.cfg.HealthzAddress, cache)
 	go healthz.run()
@@ -126,8 +126,8 @@ func (e *ECU) Shutdown() {
 }
 
 // httpsServer starts an HTTPs server.
-func (e *ECU) httpsServer(tlsConfig *tls.Config) *http.Server {
-	handler, err := prom.NewHandler()
+func (e *ECU) httpsServer(tlsConfig *tls.Config, cache *statsCache) *http.Server {
+	handler, err := prom.NewHandler(cache)
 	if err != nil {
 		log.Fatalf("failed to create prometheus handler: %v", err)
 	}

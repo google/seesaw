@@ -9,10 +9,6 @@ import (
 	log "github.com/golang/glog"
 )
 
-const (
-	subsystem = "mem"
-)
-
 type memCollector struct {
 	fs                procfs.FS
 	memUsed, memTotal typedDesc
@@ -33,12 +29,12 @@ func newMemCollectorWithFS(fs procfs.FS) (*memCollector, error) {
 	return &memCollector{
 		fs: fs,
 		memUsed: typedDesc{prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "used_bytes"),
+			prometheus.BuildFQName(namespace, "", "memory_used_bytes"),
 			"Memory being used.",
 			nil, nil),
 			prometheus.GaugeValue},
 		memTotal: typedDesc{prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "total_bytes"),
+			prometheus.BuildFQName(namespace, "", "memory_total_bytes"),
 			"Total memory of the instance.",
 			nil, nil),
 			prometheus.GaugeValue},

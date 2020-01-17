@@ -963,6 +963,19 @@ func TestVserverSnapshot(t *testing.T) {
 	}
 
 	vserver.handleConfigUpdate(&vserverConfig)
+	oldest := time.Date(2000, 2, 1, 12, 30, 0, 0, time.UTC)
+	lc := oldest
+	for _, c := range vserver.checks {
+		n := &checkNotification{
+			key: c.key,
+			status: healthcheck.Status{
+				State:     healthcheck.StateUnhealthy,
+				LastCheck: lc,
+			},
+		}
+		vserver.handleCheckNotification(n)
+		lc.Add(1 * time.Hour)
+	}
 	snapshot := vserver.snapshot()
 
 	if got, want := snapshot.Name, expectedSnapshot.Name; got != want {
@@ -976,6 +989,9 @@ func TestVserverSnapshot(t *testing.T) {
 	}
 	if got, want := len(snapshot.Services), len(expectedSnapshot.Services); got != want {
 		t.Errorf("Snapshot has incorrect number of services - got %d, want %d", got, want)
+	}
+	if got, want := snapshot.OldestHealthCheck, oldest; got != want {
+		t.Errorf("Snapshot has incorrect OldestHealthCheck - got %s, want %s", got, want)
 	}
 
 	for _, svc := range snapshot.Services {

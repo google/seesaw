@@ -466,6 +466,8 @@ type Vserver struct {
 	Enabled       bool
 	ConfigEnabled bool
 	Warnings      []string
+	// The time when the oldest healthcheck was done.
+	OldestHealthCheck time.Time
 }
 
 // VserverEntry represents a port and protocol combination for a Vserver.
@@ -553,4 +555,9 @@ type Backend struct {
 // BackendMap provides a map of backends keyed by backend hostname.
 type BackendMap struct {
 	Backends map[string]*Backend
+}
+
+// EngineStatus specifies the status of a Seesaw engine.
+type EngineStatus struct {
+	Uptime time.Duration
 }

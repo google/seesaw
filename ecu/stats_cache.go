@@ -22,6 +22,8 @@ type statsCache struct {
 
 	ha *seesaw.HAStatus
 	cs *seesaw.ConfigStatus
+	vs map[string]*seesaw.Vserver
+	es *seesaw.EngineStatus
 }
 
 func newStatsCache(engineSocket string, staleThreashold time.Duration) *statsCache {
@@ -40,6 +42,9 @@ func (s *statsCache) refreshIfNeeded() error {
 
 	s.ha = nil
 	s.cs = nil
+	s.vs = nil
+	s.es = nil
+
 	defer func() { s.lastRefresh = time.Now() }()
 	ctx := ipc.NewTrustedContext(seesaw.SCECU)
 	seesawConn, err := conn.NewSeesawIPC(ctx)
@@ -53,7 +58,7 @@ func (s *statsCache) refreshIfNeeded() error {
 
 	ha, err := seesawConn.HAStatus()
 	if err != nil {
-		return fmt.Errorf("failed to get HA status: %v", err)
+		return fmt.Errorf("failed to get ha status: %v", err)
 	}
 	s.ha = ha
 
@@ -63,11 +68,23 @@ func (s *statsCache) refreshIfNeeded() error {
 	}
 	s.cs = cs
 
+	vs, err := seesawConn.Vservers()
+	if err != nil {
+		return fmt.Errorf("failed to get vservers: %v", err)
+	}
+	s.vs = vs
+
+	es, err := seesawConn.EngineStatus()
+	if err != nil {
+		return fmt.Errorf("failed to get engine status: %v", err)
+	}
+	s.es = es
+
 	return nil
 }
 
-// getHAStatus returns seesaw HAStatus. May refresh it based if it's older than staleThreashold.
-func (s *statsCache) getHAStatus() (*seesaw.HAStatus, error) {
+// GetHAStatus returns seesaw HAStatus. May refresh it based if it's older than staleThreashold.
+func (s *statsCache) GetHAStatus() (*seesaw.HAStatus, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -81,8 +98,8 @@ func (s *statsCache) getHAStatus() (*seesaw.HAStatus, error) {
 	return s.ha, nil
 }
 
-// getConfigStatus returns ConfigStatus. May refresh it based if it's older than staleThreashold.
-func (s *statsCache) getConfigStatus() (*seesaw.ConfigStatus, error) {
+// GetConfigStatus returns ConfigStatus. May refresh it based if it's older than staleThreashold.
+func (s *statsCache) GetConfigStatus() (*seesaw.ConfigStatus, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -94,4 +111,34 @@ func (s *statsCache) getConfigStatus() (*seesaw.ConfigStatus, error) {
 		return nil, errors.New("last refresh failed. Retry after stale")
 	}
 	return s.cs, nil
+}
+
+// GetVservers returns all Vservers. May refresh it based if it's older than staleThreashold.
+func (s *statsCache) GetVservers() (map[string]*seesaw.Vserver, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if err := s.refreshIfNeeded(); err != nil {
+		return nil, err
+	}
+
+	if s.vs == nil {
+		return nil, errors.New("last refresh failed. Retry after stale")
+	}
+	return s.vs, nil
+}
+
+// GetEngineStatus returns seesaw EngineStatus. May refresh it based if it's older than staleThreashold.
+func (s *statsCache) GetEngineStatus() (*seesaw.EngineStatus, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if err := s.refreshIfNeeded(); err != nil {
+		return nil, err
+	}
+
+	if s.es == nil {
+		return nil, errors.New("last refresh failed. Retry after stale")
+	}
+	return s.es, nil
 }

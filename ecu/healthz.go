@@ -12,13 +12,13 @@ import (
 )
 
 type healthzServer struct {
-	stats  *statsCache
+	sc     *statsCache
 	server *http.Server
 }
 
-func newHealthzServer(address string, stats *statsCache) *healthzServer {
+func newHealthzServer(address string, sc *statsCache) *healthzServer {
 	s := &healthzServer{
-		stats: stats,
+		sc: sc,
 	}
 	handler := http.NewServeMux()
 	handler.HandleFunc("/healthz", s.handle)
@@ -32,7 +32,7 @@ func newHealthzServer(address string, stats *statsCache) *healthzServer {
 }
 
 func (s *healthzServer) isAlive() (bool, error) {
-	ha, err := s.stats.getHAStatus()
+	ha, err := s.sc.GetHAStatus()
 	if err != nil {
 		return false, err
 	}

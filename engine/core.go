@@ -80,6 +80,8 @@ type Engine struct {
 	vserverSnapshots map[string]*seesaw.Vserver
 	vserverLock      sync.RWMutex
 	vserverChan      chan *seesaw.Vserver
+
+	startTime time.Time
 }
 
 // NewEngine returns an initialised Engine struct.
@@ -120,6 +122,7 @@ func NewEngine(cfg *config.EngineConfig) *Engine {
 func (e *Engine) Run() {
 	log.Infof("Seesaw Engine starting for %s", e.config.ClusterName)
 
+	e.startTime = time.Now()
 	e.initNetwork()
 
 	n, err := config.NewNotifier(e.config)
