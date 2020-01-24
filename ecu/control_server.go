@@ -126,7 +126,7 @@ func (c *controlServer) GetStats(ctx context.Context, in *ecupb.GetStatsRequest)
 	}
 	out.Hostname = hn
 
-	ha, reason, err := isReady(c.sc)
+	ha, reason, err := checkReadiness(c.sc)
 	if err != nil {
 		return nil, err
 	}
