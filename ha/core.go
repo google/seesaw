@@ -405,7 +405,7 @@ func (n *Node) receiveAdvertisements() {
 }
 
 func (n *Node) reportStatus() {
-	for _ = range time.Tick(n.StatusReportInterval) {
+	for range time.Tick(n.StatusReportInterval) {
 		var err error
 		failover := false
 		failures := 0
@@ -426,7 +426,7 @@ func (n *Node) reportStatus() {
 }
 
 func (n *Node) checkConfig() {
-	for _ = range time.Tick(n.ConfigCheckInterval) {
+	for range time.Tick(n.ConfigCheckInterval) {
 		failures := 0
 		var cfg *seesaw.HAConfig
 		var err error
