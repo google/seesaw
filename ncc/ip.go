@@ -105,6 +105,9 @@ func ipRunIface(iface *net.Interface, cmd string, args ...interface{}) error {
 // for both the given interface and any associated VLAN interfaces.
 func ifaceDown(pIface *net.Interface) error {
 	out, err := ipRunOutput("link show dev %s", pIface.Name)
+	if err != nil {
+		return err	
+	}
 	if !strings.Contains(out, "state UP") {
 		return nil
 	}
@@ -120,7 +123,10 @@ func ifaceDown(pIface *net.Interface) error {
 	}
 	ifaces = append(ifaces, pIface)
 	for _, iface := range ifaces {
-		out, err = ipRunOutput("-6 addr show dev %s scope global", iface.Name)
+		out, err := ipRunOutput("-6 addr show dev %s scope global", iface.Name)
+		if err != nil {
+			return err	
+		}
 		for _, line := range strings.Split(out, "\n") {
 			if match := ipv6AddrRegexp.FindStringSubmatch(line); match != nil {
 				ipv6Addrs[match[1]] = iface
