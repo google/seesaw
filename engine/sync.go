@@ -559,8 +559,15 @@ func (sc *syncClient) run() error {
 	}
 }
 
+func (sc *syncClient) peerConfigured() bool {
+	return sc.engine.config.Peer.IPv4Addr != nil || sc.engine.config.Peer.IPv6Addr != nil
+}
+
 // enable enables synchronisation with our peer Seesaw node.
 func (sc *syncClient) enable() {
+	if !sc.peerConfigured() {
+		return
+	}
 	sc.lock.Lock()
 	start := !sc.enabled
 	sc.enabled = true
@@ -572,6 +579,9 @@ func (sc *syncClient) enable() {
 
 // disable disables synchronisation with our peer Seesaw node.
 func (sc *syncClient) disable() {
+	if !sc.peerConfigured() {
+		return
+	}
 	sc.lock.Lock()
 	quit := sc.enabled
 	sc.enabled = false
