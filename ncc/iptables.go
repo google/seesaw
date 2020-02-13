@@ -52,9 +52,9 @@ const (
 	ipt6Cmd = "/sbin/ip6tables"
 
 	iptAppend iptAction = "-A"
-	iptCheck            = "-C"
-	iptDelete           = "-D"
-	iptInsert           = "-I"
+	iptCheck iptAction  = "-C"
+	iptDelete iptAction = "-D"
+	iptInsert iptAction = "-I"
 
 	iptMaxTries      = 5
 	iptResourceError = 4
