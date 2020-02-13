@@ -324,16 +324,12 @@ func addNodes(c *Cluster, p *pb.Cluster) {
 		nodes = append(nodes, n)
 	}
 	sort.Sort(seesaw.NodesByIPv4{nodes})
-nodesLoop:
 	for i, n := range nodes {
-		switch i {
-		case 0:
+		if i == 0 {
 			n.Priority = 255
-		case 1:
-			n.Priority = 1
-		default:
-			break nodesLoop
+			continue
 		}
+		n.Priority = len(nodes)-i
 	}
 }
 
