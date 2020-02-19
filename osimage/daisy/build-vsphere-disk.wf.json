@@ -6,6 +6,7 @@
       "Description": "Image version to embed into /etc/cloud/build.info"
     },
     "worker_image": "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts",
+    "guest_base_image": "projects/gke-on-prem-staging/global/images/ubuntu-gke-onprem-1804-1-15-v20200226a",
     "service_account": "compute-osimage-builder@louhi-qa.iam.gserviceaccount.com",
     "target_image_size": "10",
     "target_image_name": "image",
@@ -27,7 +28,8 @@
         },
         {
           "Name": "target-disk",
-          "SizeGb": "${target_image_size}"
+	  "SizeGb": "${target_image_size}",
+          "SourceImage": "${guest_base_image}"
         }
       ]
     },
@@ -38,9 +40,6 @@
           "Disks": [
             {
               "Source": "worker-disk"
-            },
-            {
-              "Source": "target-disk"
             }
           ],
           "StartupScript": "startup-script.sh",
@@ -59,7 +58,28 @@
         }
       ]
     },
-    "wait": {
+    "wait-for-boot": {
+      "Timeout": "10m",
+      "WaitForInstancesSignal": [
+        {
+          "Name": "worker-instance",
+          "SerialOutput": {
+            "Port": 1,
+            "SuccessMatch": "Ready for disk.",
+            "FailureMatch": "BuildFailed:"
+          }
+        }
+      ]
+    },
+    "attach-target-disk": {
+      "AttachDisks": [
+        {
+          "Source": "target-disk",
+          "Instance": "worker-instance"
+        }
+      ]
+    },
+    "wait-for-provision-target-disk": {
       "Timeout": "30m",
       "WaitForInstancesSignal": [
         {
@@ -101,14 +121,21 @@
     "instances": [
       "disks"
     ],
-    "wait": [
+    "wait-for-boot": [
       "instances"
     ],
+    "attach-target-disk": [
+      "wait-for-boot"
+    ],
+    "wait-for-provision-target-disk": [
+      "attach-target-disk"
+    ],
     "copy-artifacts": [
-      "wait"
+      "wait-for-provision-target-disk"
     ],
     "delete": [
-      "wait"
+      "wait-for-provision-target-disk"
     ]
   }
+
 }

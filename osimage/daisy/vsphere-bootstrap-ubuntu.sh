@@ -27,6 +27,11 @@ DAISY_SOURCES_PATH=$(get_instance_attribute 'daisy-sources-path')
 # Target
 TARGET_IMAGE_NAME=$(get_instance_attribute 'target-image-name')
 IMAGE_VERSION=$(get_instance_attribute 'image-version')
+# Docker version to be installed in Host, should be compatible with Target OS
+# gsutil cat gs://gke-on-prem-os-ubuntu-source/ubuntu-gke-onprem-1804-1-15-v20200226a.manifest | grep docker.io
+DOCKER_VERSION=19.03.2-0ubuntu1~18.04.0.1
+DOCKER_PPA=docker1903-k8s
+
 # Temporary storage
 DAISY_OUTS_PATH=$(get_instance_attribute 'daisy-outs-path')
 rootfs=/mnt
@@ -39,17 +44,8 @@ prepare_host() {
   gsutil cp "${DAISY_SOURCES_PATH}/builddeps.tar" ./
   tar --extract --verbose --file builddeps.tar
 
-  cat > /etc/apt/sources.list.d/docker-ppa.list <<'EOF'
-# CLOUD_IMG: This file was created/modified by the Cloud Image build process
-# Docker PPA for (pinned) packages to enable Kubernetes.
-deb http://ppa.launchpad.net/cloud-images/docker-k8s1.9/ubuntu bionic main
-EOF
-
-  cat > /etc/apt/preferences.d/cloud-images-docker-k8s19-pin-900 <<'EOF'
-Package: docker.io
-Pin: release o=LP-PPA-cloud-images-docker-k8s1.9
-Pin-Priority: 900
-EOF
+  # source PPA for required docker version
+  add-apt-repository ppa:cloud-images/$DOCKER_PPA -y
 
   mkdir -p /etc/systemd/system/docker.service.d
   cat > /etc/systemd/system/docker.service.d/gke-docker-options.conf <<'EOF'
@@ -60,28 +56,21 @@ ExecStart=
 ExecStart=/usr/bin/dockerd -H fd:// --live-restore -s overlay2 $DOCKER_OPTS
 EOF
 
-  # From builddeps.tar
-  apt-key add docker-k8s1.9.asc
-
   apt-get update
   env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     qemu-utils \
-    docker.io=17.03.2-0ubuntu7~ppa2
-}
-fetch_and_write_image() {
-  build_status "Extracting image and writing to disk"
-  # The source archive only contains one virtual disk
-  source_disk_file=$(tar tf "ubuntu_source.ova" | grep .vmdk)
-  tar xf "ubuntu_source.ova" "${source_disk_file}"
-  qemu-img convert -O raw "${source_disk_file}" "${rootfs_disk}"
-  # Expand main partition to full disk size
-  growpart "${rootfs_disk}" 1
-  sync
-  # inform the OS of partition table changes
-  partprobe "${rootfs_disk}"
+    docker.io=$DOCKER_VERSION
 }
 prepare_chroot() {
   build_status "Preparing chroot"
+
+  # Expand main partition to full disk size
+  growpart "${rootfs_disk}" 1
+  e2fsck -fy "${rootfs_disk}1"
+  resize2fs "${rootfs_disk}"1
+  sync
+  partprobe "${rootfs_disk}"
+
   # Mount main partition
   mount "${rootfs_disk}1"  "$rootfs" -o noatime
   mount none -t sysfs "${rootfs}/sys"
@@ -141,10 +130,19 @@ upload_target_image() {
   build_status "Uploading artifacts to ${DAISY_OUTS_PATH}"
   gsutil cp "${disk_name}" "${manifest_name}" "${rootfs_tarball_name}" "${DAISY_OUTS_PATH}/"
 }
+
+build_status "Ready for disk. Waiting for target disk to get attached..."
+
+while [ `lsblk | grep disk | wc -l` -lt 2 ]; do
+  echo "Only 1 disk found."
+  sleep 5
+done
+
+build_status "New Disk found: \n `lsblk`"
+
 mkdir -p /build
 cd /build
 prepare_host
-fetch_and_write_image
 prepare_chroot
 provision_image
 finalize_chroot

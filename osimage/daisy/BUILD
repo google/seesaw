@@ -26,9 +26,7 @@ pkg_tar(
 pkg_tar(
     name = "builddeps",
     files = {
-        "@ubuntu_source//file": "ubuntu_source.ova",
         "containers.tar": "containers.tar",
-        "docker-k8s1.9.asc": "docker-k8s1.9.asc",
     },
 )
 genrule(
