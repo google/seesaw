@@ -14,7 +14,8 @@ func TestServiceCollector(t *testing.T) {
 		Stats: &seesaw.ServiceStats{
 			ServiceStats: &ipvs.ServiceStats{
 				Stats: ipvs.Stats{
-					BytesIn: 3000,
+					BytesIn:   3000,
+					PacketsIn: 30,
 				},
 			},
 		},
@@ -24,7 +25,8 @@ func TestServiceCollector(t *testing.T) {
 					DestinationStats: &ipvs.DestinationStats{
 						ActiveConns: 10,
 						Stats: ipvs.Stats{
-							BytesIn: 1000,
+							BytesIn:   1000,
+							PacketsIn: 10,
 						},
 					},
 				},
@@ -35,7 +37,8 @@ func TestServiceCollector(t *testing.T) {
 					DestinationStats: &ipvs.DestinationStats{
 						ActiveConns: 20,
 						Stats: ipvs.Stats{
-							BytesIn: 2000,
+							BytesIn:   2000,
+							PacketsIn: 20,
 						},
 					},
 				},
@@ -46,7 +49,8 @@ func TestServiceCollector(t *testing.T) {
 		Stats: &seesaw.ServiceStats{
 			ServiceStats: &ipvs.ServiceStats{
 				Stats: ipvs.Stats{
-					BytesIn: 1001,
+					BytesIn:   1001,
+					PacketsIn: 11,
 				},
 			},
 		},
@@ -57,7 +61,8 @@ func TestServiceCollector(t *testing.T) {
 					DestinationStats: &ipvs.DestinationStats{
 						ActiveConns: 11,
 						Stats: ipvs.Stats{
-							BytesIn: 1001,
+							BytesIn:   1001,
+							PacketsIn: 11,
 						},
 					},
 				},
@@ -91,6 +96,10 @@ func TestServiceCollector(t *testing.T) {
 		`seesaw_ingress_bytes_count_by_backend{backend_node="node-2"} 2000`,
 		`seesaw_ingress_bytes_count_by_service{service_name="service-1",service_port="1",service_proto="TCP"} 3000`,
 		`seesaw_ingress_bytes_count_by_service{service_name="service-1",service_port="2",service_proto="TCP"} 1001`,
+		`seesaw_packets_count_by_backend{backend_node="node-1"} 21`,
+		`seesaw_packets_count_by_backend{backend_node="node-2"} 20`,
+		`seesaw_packets_count_by_service{service_name="service-1",service_port="1",service_proto="TCP"} 30`,
+		`seesaw_packets_count_by_service{service_name="service-1",service_port="2",service_proto="TCP"} 11`,
 		`seesaw_active_connection_by_backend{backend_node="node-1"} 21`,
 		`seesaw_active_connection_by_backend{backend_node="node-2"} 20`,
 		`seesaw_active_connection_by_service{service_name="service-1",service_port="1",service_proto="TCP"} 30`,
