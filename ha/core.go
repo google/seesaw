@@ -257,7 +257,7 @@ func (n *Node) doMasterTasks() seesaw.HAState {
 			return seesaw.HAMaster
 		}
 		if advert.VRID != n.VRID {
-			log.Infof("doMasterTasks: ignoring advertisement with peer VRID=%v (my VRID=%v)",
+			log.V(1).Infof("doMasterTasks: ignoring advertisement with peer VRID=%v (my VRID=%v)",
 				advert.VRID, n.VRID)
 			return seesaw.HAMaster
 		}
@@ -319,7 +319,7 @@ func (n *Node) backupHandleAdvertisement(advert *advertisement) seesaw.HAState {
 		return seesaw.HABackup
 
 	case advert.VRID != n.VRID:
-		log.Infof("backupHandleAdvertisement: ignoring advertisement with peer VRID=%v (my VRID=%v)",
+		log.V(1).Infof("backupHandleAdvertisement: ignoring advertisement with peer VRID=%v (my VRID=%v)",
 			advert.VRID, n.VRID)
 		return seesaw.HABackup
 
