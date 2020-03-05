@@ -92,14 +92,13 @@ type Node struct {
 // NewNode creates a new Node with the given NodeConfig and HAConn.
 func NewNode(cfg NodeConfig, conn HAConn, engine Engine) *Node {
 	n := &Node{
-		NodeConfig:           cfg,
-		conn:                 conn,
-		engine:               engine,
-		lastMasterAdvertTime: time.Now(),
-		errChannel:           make(chan error),
-		recvChannel:          make(chan *advertisement, 20),
-		stopSenderChannel:    make(chan seesaw.HAState),
-		shutdownChannel:      make(chan bool),
+		NodeConfig:        cfg,
+		conn:              conn,
+		engine:            engine,
+		errChannel:        make(chan error),
+		recvChannel:       make(chan *advertisement, 20),
+		stopSenderChannel: make(chan seesaw.HAState),
+		shutdownChannel:   make(chan bool),
 	}
 	n.setState(seesaw.HABackup)
 	n.resetMasterDownInterval(cfg.MasterAdvertInterval)
@@ -252,15 +251,6 @@ func (n *Node) becomeShutdown() {
 func (n *Node) doMasterTasks() seesaw.HAState {
 	select {
 	case advert := <-n.recvChannel:
-		if advert.VersionType != vrrpVersionType {
-			// Ignore
-			return seesaw.HAMaster
-		}
-		if advert.VRID != n.VRID {
-			log.Infof("doMasterTasks: ignoring advertisement with peer VRID=%v (my VRID=%v)",
-				advert.VRID, n.VRID)
-			return seesaw.HAMaster
-		}
 		if advert.Priority == n.Priority {
 			// TODO(angusc): RFC 5798 says we should compare IP addresses at this point.
 			log.Warningf("doMasterTasks: ignoring advertisement with my priority (%v)", advert.Priority)
@@ -285,8 +275,11 @@ func (n *Node) doMasterTasks() seesaw.HAState {
 }
 
 func (n *Node) doBackupTasks() seesaw.HAState {
-	deadline := n.lastMasterAdvertTime.Add(n.masterDownInterval)
-	remaining := deadline.Sub(time.Now())
+	remaining := n.masterDownInterval
+	if !n.lastMasterAdvertTime.IsZero() {
+		deadline := n.lastMasterAdvertTime.Add(n.masterDownInterval)
+		remaining = deadline.Sub(time.Now())
+	}
 	timeout := time.After(remaining)
 	select {
 	case advert := <-n.recvChannel:
@@ -314,15 +307,6 @@ func (n *Node) doBackupTasks() seesaw.HAState {
 
 func (n *Node) backupHandleAdvertisement(advert *advertisement) seesaw.HAState {
 	switch {
-	case advert.VersionType != vrrpVersionType:
-		// Ignore
-		return seesaw.HABackup
-
-	case advert.VRID != n.VRID:
-		log.Infof("backupHandleAdvertisement: ignoring advertisement with peer VRID=%v (my VRID=%v)",
-			advert.VRID, n.VRID)
-		return seesaw.HABackup
-
 	case advert.Priority == 0:
 		log.Infof("backupHandleAdvertisement: peer priority is 0 - becoming MASTER")
 		return seesaw.HAMaster
@@ -395,6 +379,9 @@ func (n *Node) receiveAdvertisements() {
 				log.Fatalf("receiveAdvertisements: Unable to write to errChannel. Error was: %v", err)
 			}
 		} else if advert != nil {
+			if advert.VersionType != vrrpVersionType || advert.VRID != n.VRID {
+				continue
+			}
 			receiveCount := atomic.AddUint64(&n.receiveCount, 1)
 			if receiveCount%20 == 0 {
 				log.Infof("receiveAdvertisements: Received %d advertisements", receiveCount)
