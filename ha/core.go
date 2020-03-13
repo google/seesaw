@@ -392,11 +392,15 @@ func (n *Node) receiveAdvertisements() {
 }
 
 func (n *Node) reportStatus() {
-	for range time.Tick(n.StatusReportInterval) {
+	for {
 		var err error
 		failover := false
 		failures := 0
-		for failover, err = n.engine.HAUpdate(n.status()); err != nil; {
+		for {
+			failover, err = n.engine.HAUpdate(n.status())
+			if err == nil {
+				break
+			}
 			failures++
 			log.Errorf("reportStatus: %v", err)
 			if failures > n.StatusReportMaxFailures {
@@ -409,15 +413,20 @@ func (n *Node) reportStatus() {
 			log.Info("Received failover request, initiating shutdown...")
 			n.Shutdown()
 		}
+		time.Sleep(n.StatusReportInterval)
 	}
 }
 
 func (n *Node) checkConfig() {
-	for range time.Tick(n.ConfigCheckInterval) {
+	for {
 		failures := 0
 		var cfg *seesaw.HAConfig
 		var err error
-		for cfg, err = n.engine.HAConfig(); err != nil; {
+		for {
+			cfg, err = n.engine.HAConfig()
+			if err == nil {
+				break
+			}
 			failures++
 			log.Errorf("checkConfig: %v", err)
 			if failures > n.ConfigCheckMaxFailures {
@@ -431,5 +440,6 @@ func (n *Node) checkConfig() {
 			log.Infof("New HAConfig: %v", *cfg)
 			n.errChannel <- fmt.Errorf("checkConfig: HAConfig has changed")
 		}
+		time.Sleep(n.ConfigCheckInterval)
 	}
 }
