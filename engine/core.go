@@ -164,13 +164,23 @@ func (e *Engine) queueOverride(o seesaw.Override) {
 }
 
 // setHAState tells the engine what its current HAState should be.
-func (e *Engine) setHAState(state seesaw.HAState) {
-	e.haManager.stateChan <- state
+func (e *Engine) setHAState(state seesaw.HAState) error {
+	select {
+	case e.haManager.stateChan <- state:
+	default:
+		return fmt.Errorf("state channel if full")
+	}
+	return nil
 }
 
 // setHAStatus tells the engine what the current HA status is.
-func (e *Engine) setHAStatus(status seesaw.HAStatus) {
-	e.haManager.statusChan <- status
+func (e *Engine) setHAStatus(status seesaw.HAStatus) error {
+	select {
+	case e.haManager.statusChan <- status:
+	default:
+		return fmt.Errorf("status channel if full")
+	}
+	return nil
 }
 
 // haConfig returns the HAConfig for an engine.
@@ -334,10 +344,12 @@ func (e *Engine) gratuitousARP() {
 			if err := e.ncc.Dial(); err != nil {
 				log.Fatalf("Failed to connect to NCC: %v", err)
 			}
-			defer e.ncc.Close()
+
 			if err := e.ncc.ARPSendGratuitous(e.config.LBInterface, e.config.ClusterVIP.IPv4Addr); err != nil {
+				e.ncc.Close()
 				log.Fatalf("Failed to send gratuitous ARP: %v", err)
 			}
+			e.ncc.Close()
 
 		case <-e.shutdownARP:
 			e.shutdownARP <- true
@@ -350,10 +362,29 @@ func (e *Engine) gratuitousARP() {
 // seesaw engine.
 func (e *Engine) manager() {
 	for {
+		// process ha state updates first before processing others
 		select {
+		case state := <-e.haManager.stateChan:
+			log.Infof("Received HA state notification %v", state)
+			e.haManager.setState(state)
+			continue
+		case status := <-e.haManager.statusChan:
+			log.V(1).Infof("Received HA status notification (%v)", status.State)
+			e.haManager.setStatus(status)
+			continue
+		default:
+		}
+		select {
+		case state := <-e.haManager.stateChan:
+			log.Infof("Received HA state notification %v", state)
+			e.haManager.setState(state)
+
+		case status := <-e.haManager.statusChan:
+			log.V(1).Infof("Received HA status notification (%v)", status.State)
+			e.haManager.setStatus(status)
+
 		case n := <-e.notifier.C:
 			log.V(1).Infof("Received cluster config notification; %v", &n)
-
 			e.syncServer.notify(&SyncNote{Type: SNTConfigUpdate})
 
 			e.clusterLock.Lock()
@@ -391,14 +422,6 @@ func (e *Engine) manager() {
 
 			// TODO(jsing): Ensure this does not block.
 			e.updateVservers()
-
-		case state := <-e.haManager.stateChan:
-			log.Infof("Received HA state notification %v", state)
-			e.haManager.setState(state)
-
-		case status := <-e.haManager.statusChan:
-			log.V(1).Infof("Received HA status notification (%v)", status.State)
-			e.haManager.setStatus(status)
 
 		case <-e.haManager.timer():
 			log.Infof("Timed out waiting for HAState")
@@ -603,7 +626,6 @@ func (e *Engine) becomeMaster() {
 		log.Fatalf("Failed to connect to NCC: %v", err)
 	}
 	defer e.ncc.Close()
-
 	e.syncClient.disable()
 	e.hcManager.enable()
 	e.notifier.SetSource(config.SourceServer)

@@ -101,7 +101,9 @@ func (s *SeesawEngine) HAUpdate(args *ipc.HAStatus, failover *bool) error {
 		return errors.New("insufficient access")
 	}
 
-	s.engine.setHAStatus(args.Status)
+	if err := s.engine.setHAStatus(args.Status); err != nil {
+		return err
+	}
 	if failover != nil {
 		*failover = s.engine.haManager.failover()
 	}
@@ -124,8 +126,7 @@ func (s *SeesawEngine) HAState(args *ipc.HAState, reply *int) error {
 		return errors.New("insufficient access")
 	}
 
-	s.engine.setHAState(args.State)
-	return nil
+	return s.engine.setHAState(args.State)
 }
 
 // HAStatus returns the current HA status from the Seesaw Engine.
