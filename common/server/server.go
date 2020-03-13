@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -42,6 +43,7 @@ var signalNames = map[syscall.Signal]string{
 	syscall.SIGINT:  "SIGINT",
 	syscall.SIGQUIT: "SIGQUIT",
 	syscall.SIGTERM: "SIGTERM",
+	syscall.SIGUSR1: "SIGUSR1",
 }
 
 // signalName returns a string containing the standard name for a given signal.
@@ -56,17 +58,27 @@ func signalName(s syscall.Signal) string {
 // SIGINT, SIGQUIT or SIGTERM is received by the process.
 func ShutdownHandler(server Shutdowner) {
 	sigc := make(chan os.Signal, 3)
-	signal.Notify(sigc, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	signal.Notify(sigc, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGUSR1)
 	go func() {
 		for s := range sigc {
 			name := s.String()
 			if sig, ok := s.(syscall.Signal); ok {
+				if sig == syscall.SIGUSR1 {
+					dumpStacks()
+					continue
+				}
 				name = signalName(sig)
 			}
 			log.Infof("Received %v, initiating shutdown...", name)
 			server.Shutdown()
 		}
 	}()
+}
+
+func dumpStacks() {
+	buf := make([]byte, 16384)
+	buf = buf[:runtime.Stack(buf, true)]
+	log.Infof("=== BEGIN goroutine stack dump ===\n%s\n=== END goroutine stack dump ===", buf)
 }
 
 // RemoveUnixSocket checks to see if the given socket already exists and
