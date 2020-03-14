@@ -43,6 +43,12 @@ const (
 	dsrMarkSize = 16000
 )
 
+// checkerKey is the unique key of the health checker.
+type checkerKey struct {
+	key CheckKey
+	cfg config.Healthcheck
+}
+
 // healthcheckManager manages the healthcheck configuration for a Seesaw Engine.
 type healthcheckManager struct {
 	engine *Engine
@@ -54,8 +60,8 @@ type healthcheckManager struct {
 	vserverChecks map[string]map[CheckKey]*check // keyed by vserver name
 
 	cfgs    map[healthcheck.Id]*healthcheck.Config
-	checks  map[healthcheck.Id]*check
-	ids     map[CheckKey]healthcheck.Id
+	checks  map[healthcheck.Id][]*check
+	ids     map[checkerKey]healthcheck.Id
 	enabled bool
 	lock    sync.RWMutex // Guards cfgs, checks, enabled and ids.
 
@@ -75,7 +81,8 @@ func newHealthcheckManager(e *Engine) *healthcheckManager {
 		vserverChecks: make(map[string]map[CheckKey]*check),
 		quit:          make(chan bool),
 		stopped:       make(chan bool),
-		vcc:           make(chan vserverChecks, 100),
+		vcc:           make(chan vserverChecks, 1000),
+		enabled:       true,
 	}
 }
 
@@ -137,24 +144,24 @@ func (h *healthcheckManager) buildMaps() {
 	h.lock.RLock()
 	ids := h.ids
 	cfgs := h.cfgs
-	checks := h.checks
 	h.lock.RUnlock()
-	newIDs := make(map[CheckKey]healthcheck.Id)
+	newIDs := make(map[checkerKey]healthcheck.Id)
 	newCfgs := make(map[healthcheck.Id]*healthcheck.Config)
-	newChecks := make(map[healthcheck.Id]*check)
+	newChecks := make(map[healthcheck.Id][]*check)
 
 	for key, c := range allChecks {
-		id, ok := ids[key]
+		cKey := checkerKey{
+			key: dedup(key),
+			cfg: *c.healthcheck,
+		}
+		id, ok := ids[cKey]
 		if !ok {
 			id = h.next
 			h.next++
 		}
-
-		// Create a new healthcheck configuration if one did not
-		// previously exist, or if the check configuration changed.
 		cfg, ok := cfgs[id]
-		if !ok || *checks[id].healthcheck != *c.healthcheck {
-			newCfg, err := h.newConfig(id, key, c.healthcheck)
+		if !ok {
+			newCfg, err := h.newConfig(id, cKey.key, c.healthcheck)
 			if err != nil {
 				log.Error(err)
 				continue
@@ -162,9 +169,9 @@ func (h *healthcheckManager) buildMaps() {
 			cfg = newCfg
 		}
 
-		newIDs[key] = id
+		newIDs[cKey] = id
 		newCfgs[id] = cfg
-		newChecks[id] = c
+		newChecks[id] = append(newChecks[id], c)
 	}
 
 	h.lock.Lock()
@@ -176,13 +183,26 @@ func (h *healthcheckManager) buildMaps() {
 	h.pruneMarks()
 }
 
-// healthState handles Notifications from the healthcheck component.
-func (h *healthcheckManager) healthState(n *healthcheck.Notification) error {
+// dedup removes service related fields in a CheckKey which doesn't affect how a hc work.
+// Note that for DSR typed healthcheck, they are needed.
+func dedup(key CheckKey) CheckKey {
+	key.Name = ""
+	if key.HealthcheckMode != seesaw.HCModeDSR {
+		key.VserverIP = seesaw.IP{}
+		key.ServicePort = 0
+		key.ServiceProtocol = 0
+	}
+	return key
+}
+
+// queueHealthState handles Notifications from the healthcheck component.
+func (h *healthcheckManager) queueHealthState(n *healthcheck.Notification) error {
 	log.V(1).Infof("Received healthcheck notification: %v", n)
 
 	h.lock.RLock()
 	enabled := h.enabled
-	check := h.checks[n.Id]
+	cfg := h.cfgs[n.Id]
+	checkList := h.checks[n.Id]
 	h.lock.RUnlock()
 
 	if !enabled {
@@ -190,37 +210,19 @@ func (h *healthcheckManager) healthState(n *healthcheck.Notification) error {
 		return nil
 	}
 
-	if check == nil {
-		log.Warningf("Unknown healthcheck ID %v", n.Id)
-		return nil
-	}
-	h.engine.syncServer.notify(&SyncNote{Type: SNTHealthcheck, Healthcheck: &SyncHealthCheckNotification{
-		Key:    check.key,
-		Status: n.Status,
-	}})
-
-	return h.queueHealthState(n)
-}
-
-// queueHealthState queues a health state Notification for processing by a
-// vserver.
-func (h *healthcheckManager) queueHealthState(n *healthcheck.Notification) error {
-	h.lock.RLock()
-	cfg := h.cfgs[n.Id]
-	check := h.checks[n.Id]
-	h.lock.RUnlock()
-
-	if cfg == nil || check == nil {
+	if cfg == nil || len(checkList) == 0 {
 		log.Warningf("Unknown healthcheck ID %v", n.Id)
 		return nil
 	}
 
-	note := &checkNotification{
-		key:         check.key,
-		description: cfg.Checker.String(),
-		status:      n.Status,
+	for _, check := range checkList {
+		note := &checkNotification{
+			key:         check.key,
+			description: cfg.Checker.String(),
+			status:      n.Status,
+		}
+		check.vserver.queueCheckNotification(note)
 	}
-	check.vserver.queueCheckNotification(note)
 
 	return nil
 }
@@ -234,22 +236,6 @@ type SyncHealthCheckNotification struct {
 // String returns the string representation for the given notification.
 func (s *SyncHealthCheckNotification) String() string {
 	return fmt.Sprintf("%s %v", s.Key, s.State)
-}
-
-// handleSyncNote handles SyncHealthCheckNotification from the peer.
-func (h *healthcheckManager) handleSyncNote(s *SyncHealthCheckNotification) error {
-	h.lock.RLock()
-	id, ok := h.ids[s.Key]
-	h.lock.RUnlock()
-	if !ok {
-		log.Warningf("Unknown healthcheck key %s", s.Key)
-		return nil
-	}
-
-	return h.queueHealthState(&healthcheck.Notification{
-		Id:     id,
-		Status: s.Status,
-	})
 }
 
 func (h *healthcheckManager) newConfig(id healthcheck.Id, key CheckKey, hc *config.Healthcheck) (*healthcheck.Config, error) {
@@ -499,16 +485,18 @@ func (h *healthcheckManager) pruneMarks() {
 	h.lock.RUnlock()
 
 	backends := make(map[seesaw.IP]bool)
-	for _, check := range checks {
-		if check.key.HealthcheckMode != seesaw.HCModeDSR {
-			continue
+	for _, checkList := range checks {
+		for _, check := range checkList {
+			if check.key.HealthcheckMode != seesaw.HCModeDSR {
+				continue
+			}
+			backends[check.key.BackendIP] = true
 		}
-		backends[check.key.BackendIP] = true
-	}
 
-	for ip := range h.marks {
-		if _, ok := backends[ip]; !ok {
-			h.unmarkBackend(ip)
+		for ip := range h.marks {
+			if _, ok := backends[ip]; !ok {
+				h.unmarkBackend(ip)
+			}
 		}
 	}
 }
