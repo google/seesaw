@@ -126,8 +126,15 @@ func dialTCP(network, addr string, timeout time.Duration, mark int) (nc net.Conn
 	if err := setSocketTimeout(c.fd, timeout); err != nil {
 		return nil, err
 	}
-	if err := syscall.Connect(c.fd, rsa); err != nil {
-		return nil, os.NewSyscallError("connect", err)
+	for {
+		err := syscall.Connect(c.fd, rsa)
+		if err == nil {
+			break
+		}
+		// Blocking socket connect may be interrupted with EINTR
+		if err != syscall.EINTR {
+			return nil, os.NewSyscallError("connect", err)
+		}
 	}
 	if err := setSocketTimeout(c.fd, 0); err != nil {
 		return nil, err

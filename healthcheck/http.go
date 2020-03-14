@@ -89,7 +89,6 @@ func (hc *HTTPChecker) Check(timeout time.Duration) *Result {
 	if timeout == time.Duration(0) {
 		timeout = defaultHTTPTimeout
 	}
-	deadline := start.Add(timeout)
 
 	u, err := url.Parse(hc.Request)
 	if err != nil {
@@ -109,14 +108,19 @@ func (hc *HTTPChecker) Check(timeout time.Duration) *Result {
 		proxy = http.ProxyURL(u)
 	}
 
-	conn, err := dialTCP(hc.network(), hc.addr(), timeout, hc.Mark)
-	if err != nil {
-		return complete(start, "", false, err)
-	}
-	defer conn.Close()
+	var dialer func(network, addr string) (net.Conn, error)
 
-	dialer := func(net string, addr string) (net.Conn, error) {
-		return conn, nil
+	// DSR mode requires socket marks
+	if hc.Mode == seesaw.HCModeDSR {
+		conn, err := dialTCP(hc.network(), hc.addr(), timeout, hc.Mark)
+		if err != nil {
+			return complete(start, "", false, err)
+		}
+		defer conn.Close()
+
+		dialer = func(net string, addr string) (net.Conn, error) {
+			return conn, nil
+		}
 	}
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: !hc.TLSVerify,
@@ -130,6 +134,7 @@ func (hc *HTTPChecker) Check(timeout time.Duration) *Result {
 			Proxy:           proxy,
 			TLSClientConfig: tlsConfig,
 		},
+		Timeout: timeout,
 	}
 	req, err := http.NewRequest(hc.Method, hc.Request, nil)
 	req.URL = u
@@ -137,7 +142,6 @@ func (hc *HTTPChecker) Check(timeout time.Duration) *Result {
 	// If we received a response we want to process it, even in the
 	// presence of an error - a redirect 3xx will result in both the
 	// response and an error being returned.
-	conn.SetDeadline(deadline)
 	resp, err := client.Do(req)
 	if resp == nil {
 		return complete(start, "", false, err)

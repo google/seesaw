@@ -180,7 +180,7 @@ func (s *SeesawEngine) HealthState(args *healthcheck.HealthState, reply *int) er
 	}
 
 	for _, n := range args.Notifications {
-		if err := s.engine.hcManager.healthState(n); err != nil {
+		if err := s.engine.hcManager.queueHealthState(n); err != nil {
 			return err
 		}
 	}
