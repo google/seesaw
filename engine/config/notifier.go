@@ -70,6 +70,11 @@ func NewNotifier(ec *EngineConfig) (*Notifier, error) {
 		return nil, err
 	}
 
+	note.Cluster.Vservers = rateLimitVS(note.Cluster.Vservers, nil)
+
+	n.outgoing <- *note
+	n.last = note
+
 	// If the on disk configuration is different, update it.
 	if note.Source != SourceDisk {
 		dNote, _ := n.pullConfig(SourceDisk)
@@ -79,9 +84,6 @@ func NewNotifier(ec *EngineConfig) (*Notifier, error) {
 			}
 		}
 	}
-
-	n.last = note
-	n.outgoing <- *note
 
 	go n.run()
 	return n, nil
@@ -181,9 +183,16 @@ func (n *Notifier) configCheck() {
 		note.MetadataOnly = true
 	}
 
+	note.Cluster.Vservers = rateLimitVS(newCluster.Vservers, oldCluster.Vservers)
+
 	log.Infof("Sending config update notification")
+	select {
+	case n.outgoing <- *note:
+	default:
+		log.Warning("Config update channel is full. Skipped one config.")
+		return
+	}
 	n.last = note
-	n.outgoing <- *note
 	log.Infof("Sent config update notification")
 
 	if s != SourceDisk {
@@ -191,6 +200,58 @@ func (n *Notifier) configCheck() {
 			log.Warningf("Failed to save config to %s: %v", n.engineCfg.ClusterFile, err)
 		}
 	}
+}
+
+// The number of new or deleted vservers allowed in new cluster config.
+const vsLimit = 10
+
+// rateLimitVS limits number of deleted and added services in a new config.
+func rateLimitVS(newVS, oldVS map[string]*Vserver) map[string]*Vserver {
+	hasDeletion := false
+	if oldVS != nil {
+		for name := range oldVS {
+			if _, ok := newVS[name]; !ok {
+				hasDeletion = true
+				break
+			}
+		}
+	}
+	limitedVS := make(map[string]*Vserver)
+	if hasDeletion {
+		// As long as there is deletion, we only provide a config with deletion to
+		// avoid possible conflict between deletion and creation after rate limiting.
+		deleted := 0
+		for name, vs := range oldVS {
+			if _, ok := newVS[name]; ok {
+				limitedVS[name] = vs
+			} else {
+				if deleted >= vsLimit {
+					log.Infof("skipped deletion of svc %s", name)
+					limitedVS[name] = vs
+				} else {
+					deleted++
+				}
+			}
+		}
+		return limitedVS
+	}
+
+	added := 0
+	for name, vs := range newVS {
+		if oldVS != nil {
+			if _, ok := oldVS[name]; ok {
+				limitedVS[name] = vs
+				continue
+			}
+		}
+		if added < vsLimit {
+			limitedVS[name] = vs
+			added++
+		} else {
+			log.Infof("skipped creation of svc %s", name)
+		}
+	}
+	return limitedVS
 }
 
 func (n *Notifier) pullConfig(s Source) (*Notification, error) {
