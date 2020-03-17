@@ -22,6 +22,7 @@ package engine
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -70,8 +71,8 @@ func newVserver(e *Engine) *vserver {
 
 		overrideChan: make(chan seesaw.Override, 5),
 
-		notify:  make(chan *checkNotification, 20),
-		update:  make(chan *config.Vserver, 1),
+		notify:  make(chan *checkNotification, 1000),
+		update:  make(chan *config.Vserver, 20),
 		quit:    make(chan bool, 1),
 		stopped: make(chan bool, 1),
 	}
@@ -495,18 +496,11 @@ func (v *vserver) run() {
 
 		case <-statsTicker.C:
 			v.updateStats()
-		}
-
-		// Something changed - export a new vserver snapshot.
-		// The goroutine that drains v.engine.vserverChan also does a blocking write
-		// to each vserver's vserver.notify channel, which is drained by each
-		// vserver's goroutine (i.e., this one). So we need a timeout to avoid a
-		// deadlock.
-		timeout := time.After(1 * time.Second)
-		select {
-		case v.engine.vserverChan <- v.snapshot():
-		case <-timeout:
-			log.Warningf("%v: failed to send snapshot", v)
+			select {
+			case v.engine.vserverChan <- v.snapshot():
+			default:
+				log.Warningf("%v: failed to send snapshot", v)
+			}
 		}
 	}
 }
@@ -522,6 +516,9 @@ func (v *vserver) stop() {
 // updateConfig queues a vserver configuration update for processing. This
 // will block if a configuration update is already pending.
 func (v *vserver) updateConfig(config *config.Vserver) {
+	if reflect.DeepEqual(config, v.config) {
+		return
+	}
 	// TODO(jsing): Consider the implications of potentially blocking here.
 	v.update <- config
 }
@@ -529,7 +526,11 @@ func (v *vserver) updateConfig(config *config.Vserver) {
 // queueCheckNotification queues a checkNotification for processing.
 func (v *vserver) queueCheckNotification(n *checkNotification) {
 	// TODO(jsing): Consider the implications of potentially blocking here.
-	v.notify <- n
+	select {
+	case v.notify <- n:
+	default:
+		log.Warningf("Check notification skipped because the queue is full: %s.", v.String())
+	}
 }
 
 // queueOverride queues an Override for processing.

@@ -57,7 +57,7 @@ var (
 	statusReportMaxFailures = flag.Int("status_report_max_failures", 3,
 		"The maximum allowable number of consecutive status report failures")
 
-	statusReportRetryDelay = flag.Duration("status_report_retry_delay", 2*time.Second,
+	statusReportRetryDelay = flag.Duration("status_report_retry_delay", 10*time.Second,
 		"Time between status report retries")
 
 	testLocalAddr = flag.String("local_addr", "",
