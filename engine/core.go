@@ -622,7 +622,6 @@ func (e *Engine) becomeMaster() {
 	}
 	defer e.ncc.Close()
 	e.syncClient.disable()
-	e.hcManager.enable()
 	e.notifier.SetSource(config.SourceServer)
 
 	if err := e.lbInterface.Up(); err != nil {
@@ -639,7 +638,6 @@ func (e *Engine) becomeBackup() {
 	defer e.ncc.Close()
 
 	e.syncClient.enable()
-	e.hcManager.disable()
 	e.notifier.SetSource(config.SourceServer)
 
 	if err := e.lbInterface.Down(); err != nil {
