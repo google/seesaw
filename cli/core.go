@@ -66,8 +66,8 @@ var commands = []Command{
 	{"failover", nil, failover},
 	{"help", nil, help},
 	{"override", &commandOverride, nil},
-	{"show", &commandShow, nil},
 	{"quit", nil, exit}, // An alias for exit, matches JunOS behavior.
+	{"show", &commandShow, nil},
 }
 
 var commandConfig = []Command{
