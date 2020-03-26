@@ -67,6 +67,7 @@ var commands = []Command{
 	{"failover", nil, failover},
 	{"override", &commandOverride, nil},
 	{"show", &commandShow, nil},
+	{"help", nil, help},
 }
 
 var commandConfig = []Command{
