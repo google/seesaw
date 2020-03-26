@@ -56,3 +56,8 @@ func failover(cli *SeesawCLI, args []string) error {
 	fmt.Println("Failover requested.")
 	return nil
 }
+
+func help(cli *SeesawCLI, args []string) error {
+ 	fmt.Println("Use ? for context-aware command completions.")
+	return nil
+}
