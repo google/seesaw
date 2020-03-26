@@ -58,6 +58,6 @@ func failover(cli *SeesawCLI, args []string) error {
 }
 
 func help(cli *SeesawCLI, args []string) error {
- 	fmt.Println("Press ? for context-aware command completions.")
+ 	fmt.Println("Use ? for context-aware command completions.")
 	return nil
 }
