@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"testing"
+	"time"
 )
 
 func vsMap(vsNames []string) map[string]*Vserver {
@@ -24,13 +25,14 @@ func vsNameList(s, l int) []string {
 
 func TestRateLimit(t *testing.T) {
 	tests := []struct {
-		desc    string
-		oldVS   []string
-		newVS   []string
-		wantLen int
+		desc                   string
+		oldVS                  []string
+		moreInitConfig         bool
+		expectedMoreInitConfig bool
+		newVS                  []string
+		wantLen                int
 	}{
 		{
-
 			desc:    "no rate limit",
 			oldVS:   vsNameList(1, 10),
 			newVS:   vsNameList(1, 19),
@@ -60,20 +62,54 @@ func TestRateLimit(t *testing.T) {
 			newVS:   vsNameList(1, 14),
 			wantLen: 10,
 		},
+		{
+			desc:                   "moreInitConfig is true and rate limited",
+			oldVS:                  vsNameList(1, 11),
+			newVS:                  nil,
+			moreInitConfig:         true,
+			expectedMoreInitConfig: true,
+			wantLen:                1,
+		},
+		{
+			desc:                   "moreInitConfig is false and flipped",
+			oldVS:                  vsNameList(1, 3),
+			newVS:                  vsNameList(1, 4),
+			moreInitConfig:         true,
+			expectedMoreInitConfig: false,
+			wantLen:                4,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
 			oldVS := vsMap(tc.oldVS)
 			newVS := vsMap(tc.newVS)
-			limited := rateLimitVS(newVS, oldVS)
-			var got []string
-			for n := range limited {
-				got = append(got, n)
+			newCluster := &Cluster{Vservers: newVS}
+			newCluster.Status.LastUpdate = time.Now()
+			gotMoreInitConfig := rateLimit(newCluster, &Cluster{Vservers: oldVS}, tc.moreInitConfig)
+
+			if gotMoreInitConfig != tc.expectedMoreInitConfig {
+				t.Fatalf("moreInitConfig is wrong (got vs want):%t, %t", gotMoreInitConfig, tc.expectedMoreInitConfig)
 			}
-			if len(got) != tc.wantLen {
-				sort.Strings(got)
-				t.Fatalf("rate limited got: %v\nbut want %d items\n", got, tc.wantLen)
+			for _, vs := range newCluster.Vservers {
+				if !gotMoreInitConfig && tc.moreInitConfig {
+					if !vs.MustReady {
+						t.Fatalf("vserver %s must have MustReady set", vs.Name)
+					}
+				} else {
+					if vs.MustReady {
+						t.Fatalf("vserver %s shouldn't have MustReady set", vs.Name)
+					}
+				}
+			}
+
+			var limited []string
+			for n := range newCluster.Vservers {
+				limited = append(limited, n)
+			}
+			if len(limited) != tc.wantLen {
+				sort.Strings(limited)
+				t.Fatalf("rate limited got: %v\nbut want %d items\n", limited, tc.wantLen)
 			}
 		})
 	}

@@ -123,6 +123,7 @@ type Vserver struct {
 	Enabled      bool
 	UseFWM       bool
 	Warnings     []string
+	MustReady    bool
 }
 
 // NewVserver creates a new, initialised Vserver structure.

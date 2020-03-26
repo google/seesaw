@@ -806,6 +806,7 @@ func (v *vserver) snapshot() *seesaw.Vserver {
 		Enabled:       v.enabled,
 		ConfigEnabled: v.config.Enabled,
 		Warnings:      v.config.Warnings,
+		MustReady:     v.config.MustReady,
 	}
 	for _, ve := range v.config.Entries {
 		sv.Entries = append(sv.Entries, ve.Snapshot())

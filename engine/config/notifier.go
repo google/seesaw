@@ -22,6 +22,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -45,6 +46,8 @@ type Notifier struct {
 	// Mutable fields accessed by a single goroutine.
 	last         *Notification
 	peerFailures int
+	// indicates that current init config is rate limited.
+	moreInitConfig bool
 
 	// Lock for mutable fields accessed by more than one go routine.
 	lock sync.RWMutex
@@ -57,12 +60,13 @@ type Notifier struct {
 func NewNotifier(ec *EngineConfig) (*Notifier, error) {
 	outgoing := make(chan Notification, 1)
 	n := &Notifier{
-		C:         outgoing,
-		outgoing:  outgoing,
-		reload:    make(chan bool, 1),
-		shutdown:  make(chan bool, 1),
-		engineCfg: ec,
-		source:    SourceServer,
+		C:              outgoing,
+		outgoing:       outgoing,
+		reload:         make(chan bool, 1),
+		shutdown:       make(chan bool, 1),
+		engineCfg:      ec,
+		source:         SourceServer,
+		moreInitConfig: true,
 	}
 
 	note, err := n.bootstrap()
@@ -70,7 +74,7 @@ func NewNotifier(ec *EngineConfig) (*Notifier, error) {
 		return nil, err
 	}
 
-	note.Cluster.Vservers = rateLimitVS(note.Cluster.Vservers, nil)
+	n.moreInitConfig = rateLimit(note.Cluster, nil, n.moreInitConfig)
 
 	n.outgoing <- *note
 	n.last = note
@@ -174,6 +178,8 @@ func (n *Notifier) configCheck() {
 		return
 	}
 
+	moreInitConfig := rateLimit(note.Cluster, n.last.Cluster, n.moreInitConfig)
+
 	// If there's only metadata differences, note it so we can skip some processing later.
 	oldCluster := *n.last.Cluster
 	oldCluster.Status = seesaw.ConfigStatus{}
@@ -183,8 +189,6 @@ func (n *Notifier) configCheck() {
 		note.MetadataOnly = true
 	}
 
-	note.Cluster.Vservers = rateLimitVS(newCluster.Vservers, oldCluster.Vservers)
-
 	log.V(1).Info("Sending config update notification")
 	select {
 	case n.outgoing <- *note:
@@ -192,6 +196,7 @@ func (n *Notifier) configCheck() {
 		log.Warning("Config update channel is full. Skipped one config.")
 		return
 	}
+	n.moreInitConfig = moreInitConfig
 	n.last = note
 	log.V(1).Info("Sent config update notification")
 
@@ -200,6 +205,32 @@ func (n *Notifier) configCheck() {
 			log.Warningf("Failed to save config to %s: %v", n.engineCfg.ClusterFile, err)
 		}
 	}
+}
+
+func rateLimit(cluster, last *Cluster, moreInitConfig bool) bool {
+	var lastVS map[string]*Vserver
+	if last != nil {
+		lastVS = last.Vservers
+	}
+	vsList := rateLimitVS(cluster.Vservers, lastVS)
+	// this config is pushed from cluster controller
+	if !cluster.Status.LastUpdate.IsZero() {
+		if moreInitConfig && len(vsList) == len(cluster.Vservers) {
+			// once it turns false, we don't touch it anymore
+			moreInitConfig = false
+			// all vservers in this config must be ready before LB is ready.
+			for _, vs := range vsList {
+				vs.MustReady = true
+			}
+		}
+	}
+	cluster.Vservers = vsList
+
+	cluster.Status.Attributes = append(cluster.Status.Attributes, seesaw.ConfigMetadata{
+		Name:  seesaw.MoreInitConfigAttrName,
+		Value: strconv.FormatBool(moreInitConfig),
+	})
+	return moreInitConfig
 }
 
 // The number of new or deleted vservers allowed in new cluster config.
@@ -239,7 +270,8 @@ func rateLimitVS(newVS, oldVS map[string]*Vserver) map[string]*Vserver {
 	added := 0
 	for name, vs := range newVS {
 		if oldVS != nil {
-			if _, ok := oldVS[name]; ok {
+			if old, ok := oldVS[name]; ok {
+				vs.MustReady = old.MustReady
 				limitedVS[name] = vs
 				continue
 			}

@@ -2,6 +2,7 @@ package ecu
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -11,45 +12,53 @@ import (
 	ecupb "github.com/google/seesaw/pb/ecu"
 )
 
+func vsOf(oldestHCTime time.Time, mustReady bool) *seesaw.Vserver {
+	return &seesaw.Vserver{
+		OldestHealthCheck: oldestHCTime,
+		MustReady:         mustReady,
+	}
+}
+
 func TestGetStats(t *testing.T) {
 	tests := []struct {
 		desc           string
 		ha             seesaw.HAState
 		configTS       time.Time
-		oldestHCTime   map[string]time.Time
+		moreInitConfig bool
+		vsList         map[string]*seesaw.Vserver
 		reasonContains string
 	}{
 		{
 			desc:     "ready as master",
 			ha:       seesaw.HAMaster,
 			configTS: time.Now(),
-			oldestHCTime: map[string]time.Time{
-				"svc-1": time.Now(),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Now(), false),
 			},
 		},
 		{
 			desc:     "ready as backup",
 			ha:       seesaw.HABackup,
 			configTS: time.Now(),
-			oldestHCTime: map[string]time.Time{
-				"svc-1": time.Now(),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Now(), false),
 			},
 		},
 		{
 			desc:     "ready multiple svc",
 			ha:       seesaw.HAMaster,
 			configTS: time.Now(),
-			oldestHCTime: map[string]time.Time{
-				"svc-1": time.Now(),
-				"svc-2": time.Now(),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Now(), false),
+				"svc-2": vsOf(time.Now(), false),
 			},
 		},
 		{
 			desc:     "not ready - HAState",
 			ha:       seesaw.HAShutdown,
 			configTS: time.Now(),
-			oldestHCTime: map[string]time.Time{
-				"svc-1": time.Now(),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Now(), false),
 			},
 			reasonContains: "neither master or backup",
 		},
@@ -57,8 +66,8 @@ func TestGetStats(t *testing.T) {
 			desc:     "not ready - no config push",
 			ha:       seesaw.HAMaster,
 			configTS: time.Time{},
-			oldestHCTime: map[string]time.Time{
-				"svc-1": time.Now(),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Now(), false),
 			},
 			reasonContains: "No config pushed",
 		},
@@ -66,10 +75,17 @@ func TestGetStats(t *testing.T) {
 			desc:     "not ready - config too old",
 			ha:       seesaw.HAMaster,
 			configTS: time.Now().Add(-cfgReadinessThreshold),
-			oldestHCTime: map[string]time.Time{
-				"svc-1": time.Now(),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Now(), false),
 			},
 			reasonContains: "Last config push is too old",
+		},
+		{
+			desc:           "not ready - more init config",
+			ha:             seesaw.HABackup,
+			configTS:       time.Now(),
+			moreInitConfig: true,
+			reasonContains: "Processing init config",
 		},
 		{
 			desc:     "ready - no service",
@@ -80,19 +96,27 @@ func TestGetStats(t *testing.T) {
 			desc:     "not ready - healthcheck is not done",
 			ha:       seesaw.HABackup,
 			configTS: time.Now(),
-			oldestHCTime: map[string]time.Time{
-				"svc-1": time.Time{},
-				"svc-2": time.Now(),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Time{}, true),
+				"svc-2": vsOf(time.Now(), false),
 			},
 			reasonContains: "Healtheck is not done yet",
+		},
+		{
+			desc:     "ready - healthcheck is not done but vs is not required",
+			ha:       seesaw.HABackup,
+			configTS: time.Now(),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Time{}, false),
+			},
 		},
 		{
 			desc:     "not ready - healthcheck too old",
 			ha:       seesaw.HABackup,
 			configTS: time.Now(),
-			oldestHCTime: map[string]time.Time{
-				"svc-1": time.Now(),
-				"svc-2": time.Now().Add(-hcReadinessThreshold),
+			vsList: map[string]*seesaw.Vserver{
+				"svc-1": vsOf(time.Now(), false),
+				"svc-2": vsOf(time.Now().Add(-hcReadinessThreshold), false),
 			},
 			reasonContains: "Oldest healthcheck is too old",
 		},
@@ -108,12 +132,13 @@ func TestGetStats(t *testing.T) {
 			}
 			cache.cs = &seesaw.ConfigStatus{
 				LastUpdate: tc.configTS,
+				Attributes: []seesaw.ConfigMetadata{
+					{Name: seesaw.MoreInitConfigAttrName, Value: strconv.FormatBool(tc.moreInitConfig)},
+				},
 			}
-			cache.vs = make(map[string]*seesaw.Vserver)
-			for name, ts := range tc.oldestHCTime {
-				cache.vs[name] = &seesaw.Vserver{
-					OldestHealthCheck: ts,
-				}
+			cache.vs = tc.vsList
+			if cache.vs == nil {
+				cache.vs = make(map[string]*seesaw.Vserver)
 			}
 
 			server := newControlServer("", cache)

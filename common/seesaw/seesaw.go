@@ -468,6 +468,9 @@ type Vserver struct {
 	Warnings      []string
 	// The time when the oldest healthcheck was done.
 	OldestHealthCheck time.Time
+	// This vserver must be ready for the LB to be ready.
+	// This is true when this vserver is in the first non-rate-limited config.
+	MustReady bool
 }
 
 // VserverEntry represents a port and protocol combination for a Vserver.
@@ -561,3 +564,8 @@ type BackendMap struct {
 type EngineStatus struct {
 	Uptime time.Duration
 }
+
+// MoreInitConfigAttrName is the name of attribute in config metadata indicating current config is an
+// init config (first set of configs received during LB reboot) and due to rate limiting, more complete config is upcoming.
+// It's used for readiness report. Seesaw won't be ready until a complete init config is received.
+const MoreInitConfigAttrName = "more_init_config"

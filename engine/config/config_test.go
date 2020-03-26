@@ -396,6 +396,7 @@ var vserverTests = []struct {
 				true,
 				false,
 				nil,
+				false,
 			},
 			"dns.resolver@au-syd": {
 				"dns.resolver@au-syd",
@@ -437,6 +438,7 @@ var vserverTests = []struct {
 				true,
 				false,
 				nil,
+				false,
 			},
 			"irc.server@au-syd": {
 				"irc.server@au-syd",
@@ -518,6 +520,7 @@ var vserverTests = []struct {
 				true,
 				false,
 				nil,
+				false,
 			},
 		},
 	},

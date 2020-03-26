@@ -350,13 +350,31 @@ func (s *SeesawEngine) Vservers(ctx *ipc.Context, reply *seesaw.VserverMap) erro
 		return errors.New("insufficient access")
 	}
 
+	s.engine.clusterLock.RLock()
+	cluster := s.engine.cluster
+	s.engine.clusterLock.RUnlock()
+
+	if cluster == nil {
+		return errors.New("no cluster configuration loaded")
+	}
+
 	if reply == nil {
 		return fmt.Errorf("VserverMap is nil")
 	}
 	reply.Vservers = make(map[string]*seesaw.Vserver)
+
 	s.engine.vserverLock.RLock()
-	for name := range s.engine.vserverSnapshots {
-		reply.Vservers[name] = s.engine.vserverSnapshots[name]
+	for name, vs := range cluster.Vservers {
+		if snap, ok := s.engine.vserverSnapshots[name]; ok {
+			reply.Vservers[name] = snap
+		} else {
+			// The snapshot for VS may not be ready yet.
+			// Creates an empty one so we can check readiness.
+			reply.Vservers[name] = &seesaw.Vserver{
+				Name:      name,
+				MustReady: vs.MustReady,
+			}
+		}
 	}
 	s.engine.vserverLock.RUnlock()
 	return nil
