@@ -176,8 +176,7 @@ done:
 func (svc *Service) logFile() (*os.File, error) {
 	name := "seesaw_" + svc.name
 	t := time.Now()
-	logName := fmt.Sprintf("%s.log.%04d%02d%02d-%02d%02d%02d", name,
-		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	logName := fmt.Sprintf("%s.log.%s", name, t.Format("20060102-150405"))
 
 	f, err := os.Create(path.Join(logDir, logName))
 	if err != nil {
