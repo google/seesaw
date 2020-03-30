@@ -53,9 +53,10 @@ container_pull(
     registry = "gcr.io",
     repository = "gke-on-prem-release/pause-amd64",
 )
+
 container_pull(
     name = "debug_toolbox",
-    digest = "sha256:91982e56ae2aced49455471ce7c1eeeff906399c25ff4db603cfbbbfdb118276",
+    digest = "sha256:bfd41d7746e43d4f1c4b70270db533f6b50a0cdee14b30b12370b96bd8d5a107",
     registry = "gcr.io",
     repository = "gke-on-prem-staging/debug-toolbox",
 )
