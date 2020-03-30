@@ -55,11 +55,6 @@ func (b *bgpManager) run() {
 // update updates BGP related state and statistics from the BGP daemon.
 func (b *bgpManager) update() {
 	ncc := b.engine.ncc
-	if err := ncc.Dial(); err != nil {
-		log.Warningf("BGP manager failed to connect to NCC: %v", err)
-		return
-	}
-	defer ncc.Close()
 
 	neighbors, err := ncc.BGPNeighbors()
 	if err != nil {

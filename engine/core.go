@@ -82,17 +82,17 @@ type Engine struct {
 	vserverChan      chan *seesaw.Vserver
 }
 
-// NewEngine returns an initialised Engine struct.
-func NewEngine(cfg *config.EngineConfig) *Engine {
+func newEngineWithNCC(cfg *config.EngineConfig, ncc ncclient.NCC) *Engine {
 	if cfg == nil {
 		defaultCfg := config.DefaultEngineConfig()
 		cfg = &defaultCfg
 	}
+
 	// TODO(jsing): Validate node, peer and cluster IP configuration.
 	engine := &Engine{
 		config:   cfg,
 		fwmAlloc: newMarkAllocator(fwmAllocBase, fwmAllocSize),
-		ncc:      ncclient.NewNCC(cfg.NCCSocket),
+		ncc:      ncc,
 
 		overrides:    make(map[string]seesaw.Override),
 		overrideChan: make(chan seesaw.Override),
@@ -114,6 +114,15 @@ func NewEngine(cfg *config.EngineConfig) *Engine {
 	engine.syncClient = newSyncClient(engine)
 	engine.syncServer = newSyncServer(engine)
 	return engine
+}
+
+// NewEngine returns an initialised Engine struct.
+func NewEngine(cfg *config.EngineConfig) *Engine {
+	ncc, err := ncclient.NewNCC(cfg.NCCSocket)
+	if err != nil {
+		log.Fatalf("Failed to create ncc client: %v", err)
+	}
+	return newEngineWithNCC(cfg, ncc)
 }
 
 // Run starts the Engine.
@@ -256,11 +265,6 @@ func (e *Engine) syncRPC() {
 
 // initNetwork initialises the network configuration for load balancing.
 func (e *Engine) initNetwork() {
-	if err := e.ncc.Dial(); err != nil {
-		log.Fatalf("Failed to connect to NCC: %v", err)
-	}
-	defer e.ncc.Close()
-
 	if e.config.AnycastEnabled {
 		if err := e.ncc.BGPWithdrawAll(); err != nil {
 			log.Fatalf("Failed to withdraw all BGP advertisements: %v", err)
@@ -291,11 +295,6 @@ func (e *Engine) initNetwork() {
 
 // initAnycast initialises the anycast configuration.
 func (e *Engine) initAnycast() {
-	if err := e.ncc.Dial(); err != nil {
-		log.Fatalf("Failed to connect to NCC: %v", err)
-	}
-	defer e.ncc.Close()
-
 	vips := make([]*seesaw.VIP, 0)
 	if e.config.ClusterVIP.IPv4Addr != nil {
 		for _, ip := range e.config.ServiceAnycastIPv4 {
@@ -338,15 +337,9 @@ func (e *Engine) gratuitousARP() {
 					e.config.ClusterVIP.IPv4Addr, e.config.LBInterface, e.config.GratuitousARPInterval)
 				announced = true
 			}
-			if err := e.ncc.Dial(); err != nil {
-				log.Fatalf("Failed to connect to NCC: %v", err)
-			}
-
 			if err := e.ncc.ARPSendGratuitous(e.config.LBInterface, e.config.ClusterVIP.IPv4Addr); err != nil {
-				e.ncc.Close()
 				log.Fatalf("Failed to send gratuitous ARP: %v", err)
 			}
-			e.ncc.Close()
 
 		case <-e.shutdownARP:
 			e.shutdownARP <- true
@@ -459,6 +452,7 @@ func (e *Engine) manager() {
 			e.shutdownVservers()
 			e.hcManager.shutdown()
 			e.deleteVLANs()
+			e.ncc.Close()
 
 			log.Info("Shutdown complete")
 			return
@@ -545,11 +539,6 @@ func (e *Engine) updateVLANs() {
 		}
 	}
 
-	if err := e.ncc.Dial(); err != nil {
-		log.Fatalf("Failed to connect to NCC: %v", err)
-	}
-	defer e.ncc.Close()
-
 	for _, vlan := range remove {
 		log.Infof("Removing VLAN interface %v", vlan)
 		if err := e.lbInterface.DeleteVLAN(vlan); err != nil {
@@ -569,11 +558,6 @@ func (e *Engine) updateVLANs() {
 // deleteVLANs removes all the VLAN interfaces that have been created by this
 // engine.
 func (e *Engine) deleteVLANs() {
-	if err := e.ncc.Dial(); err != nil {
-		log.Fatalf("Failed to connect to NCC: %v", err)
-	}
-	defer e.ncc.Close()
-
 	e.vlanLock.Lock()
 	defer e.vlanLock.Unlock()
 
@@ -617,10 +601,6 @@ func (e *Engine) distributeOverride(o seesaw.Override) {
 // becomeMaster performs the necessary actions for the Seesaw Engine to
 // become the master node.
 func (e *Engine) becomeMaster() {
-	if err := e.ncc.Dial(); err != nil {
-		log.Fatalf("Failed to connect to NCC: %v", err)
-	}
-	defer e.ncc.Close()
 	e.syncClient.disable()
 	e.notifier.SetSource(config.SourceServer)
 
@@ -632,11 +612,6 @@ func (e *Engine) becomeMaster() {
 // becomeBackup performs the neccesary actions for the Seesaw Engine to
 // stop being the master node and become the backup node.
 func (e *Engine) becomeBackup() {
-	if err := e.ncc.Dial(); err != nil {
-		log.Fatalf("Failed to connect to NCC: %v", err)
-	}
-	defer e.ncc.Close()
-
 	e.syncClient.enable()
 	e.notifier.SetSource(config.SourceServer)
 

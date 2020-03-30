@@ -76,7 +76,7 @@ func newHealthcheckManager(e *Engine) *healthcheckManager {
 		engine:        e,
 		marks:         make(map[seesaw.IP]uint32),
 		markAlloc:     newMarkAllocator(dsrMarkBase, dsrMarkSize),
-		ncc:           ncclient.NewNCC(e.config.NCCSocket),
+		ncc:           e.ncc,
 		next:          healthcheck.Id((uint64(os.Getpid()) & 0xFFFF) << 48),
 		vserverChecks: make(map[string]map[CheckKey]*check),
 		quit:          make(chan bool),
@@ -422,11 +422,6 @@ func (h *healthcheckManager) markBackend(backend seesaw.IP) uint32 {
 		},
 	}
 
-	if err := h.ncc.Dial(); err != nil {
-		log.Fatalf("Failed to connect to NCC: %v", err)
-	}
-	defer h.ncc.Close()
-
 	log.Infof("Adding DSR IPVS service for %s (mark %d)", backend, mark)
 	if err := h.ncc.IPVSAddService(ipvsSvc); err != nil {
 		log.Fatalf("Failed to add IPVS service for DSR: %v", err)
@@ -463,11 +458,6 @@ func (h *healthcheckManager) unmarkBackend(backend seesaw.IP) {
 			},
 		},
 	}
-
-	if err := h.ncc.Dial(); err != nil {
-		log.Fatalf("Failed to connect to NCC: %v", err)
-	}
-	defer h.ncc.Close()
 
 	log.Infof("Removing DSR IPVS service for %s (mark %d)", backend, mark)
 	if err := h.ncc.IPVSDeleteService(ipvsSvc); err != nil {
