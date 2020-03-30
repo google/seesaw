@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"net"
 	"net/rpc"
-	"sync"
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
@@ -36,17 +35,14 @@ import (
 
 const nccMaxRetries = 3
 const nccRetryDelay = 500 * time.Millisecond
-const nccRPCTimeout = 10 * time.Second
+const nccRPCTimeout = 20 * time.Second
 
 // NCC provides a client interface to the network control component.
 type NCC interface {
 	// NewLBInterface returns an initialised NCC network LB interface.
 	NewLBInterface(name string, cfg *ncctypes.LBConfig) LBInterface
 
-	// Dial establishes a connection to the Seesaw NCC.
-	Dial() error
-
-	// Close closes an existing connection to the Seesaw NCC.
+	// Close closes the connection to the Seesaw NCC.
 	Close() error
 
 	// ARPSendGratuitous sends a gratuitious ARP message.
@@ -136,17 +132,22 @@ type LBInterface interface {
 	DeleteVLAN(vlan *seesaw.VLAN) error
 }
 
-// nccClient contains the data needed by a NCC client.
+// nccClient implements NCC interface.
 type nccClient struct {
 	client    *rpc.Client
-	lock      sync.RWMutex
 	nccSocket string
-	refs      uint
 }
 
 // NewNCC returns an initialised NCC client.
-func NewNCC(socket string) *nccClient {
-	return &nccClient{nccSocket: socket}
+// Only unix socket is supported.
+// It keeps using the same single connection for RPC assuming underlying unix socket connection is stable.
+// But caller should be prepared for failures caused by connection disruptions. The client itself doesn't handle reconnecting.
+func NewNCC(socket string) (*nccClient, error) {
+	ncc := &nccClient{nccSocket: socket}
+	if err := ncc.dial(); err != nil {
+		return nil, err
+	}
+	return ncc, nil
 }
 
 func (nc *nccClient) NewLBInterface(name string, cfg *ncctypes.LBConfig) LBInterface {
@@ -157,51 +158,35 @@ func (nc *nccClient) NewLBInterface(name string, cfg *ncctypes.LBConfig) LBInter
 
 // call performs an RPC call to the Seesaw v2 nccClient.
 func (nc *nccClient) call(name string, in interface{}, out interface{}) error {
-	nc.lock.RLock()
 	client := nc.client
-	nc.lock.RUnlock()
 	if client == nil {
 		return fmt.Errorf("Not connected")
 	}
-	ch := make(chan error, 1)
-	go func() {
-		ch <- client.Call(name, in, out)
-	}()
+
+	replyCall := client.Go(name, in, out, nil)
+
 	select {
-	case err := <-ch:
-		return err
+	case <-replyCall.Done:
+		return replyCall.Error
 	case <-time.After(nccRPCTimeout):
 		return fmt.Errorf("RPC call timed out after %v", nccRPCTimeout)
 	}
 }
 
-func (nc *nccClient) Dial() error {
-	nc.lock.Lock()
-	defer nc.lock.Unlock()
-	if nc.client != nil {
-		nc.refs++
-		return nil
-	}
+func (nc *nccClient) dial() error {
 	var err error
 	for i := 0; i < nccMaxRetries; i++ {
 		nc.client, err = rpc.Dial("unix", nc.nccSocket)
 		if err == nil {
-			nc.refs = 1
 			return nil
 		}
-		time.Sleep(time.Duration(i) * nccRetryDelay)
+		time.Sleep(time.Duration(i+1) * nccRetryDelay)
 	}
 	return fmt.Errorf("Failed to establish connection: %v", err)
 }
 
 func (nc *nccClient) Close() error {
-	nc.lock.Lock()
-	defer nc.lock.Unlock()
 	if nc.client == nil {
-		return nil
-	}
-	nc.refs--
-	if nc.refs > 0 {
 		return nil
 	}
 	if err := nc.client.Close(); err != nil {

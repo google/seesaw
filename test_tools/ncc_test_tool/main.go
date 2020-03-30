@@ -434,8 +434,8 @@ var testSvc = &ipvs.Service{
 }
 
 func ipvsGetServices(quit chan bool, count chan int) {
-	ncc := client.NewNCC(*nccSocket)
-	if err := ncc.Dial(); err != nil {
+	ncc, err := client.NewNCC(*nccSocket)
+	if err != nil {
 		log.Fatalf("Failed to connect to NCC: %v", err)
 	}
 	defer ncc.Close()
@@ -481,8 +481,8 @@ func ipvsGetLoadTest(clients int, duration time.Duration) {
 }
 
 func ipvsAddService(done chan bool, service, dests int) {
-	ncc := client.NewNCC(*nccSocket)
-	if err := ncc.Dial(); err != nil {
+	ncc, err := client.NewNCC(*nccSocket)
+	if err != nil {
 		log.Fatalf("Failed to connect to NCC: %v", err)
 	}
 	defer ncc.Close()
@@ -602,8 +602,8 @@ func main() {
 	flag.Parse()
 
 	// Connect to the NCC component.
-	ncc := client.NewNCC(*nccSocket)
-	if err := ncc.Dial(); err != nil {
+	ncc, err := client.NewNCC(*nccSocket)
+	if err != nil {
 		log.Fatalf("Failed to connect to NCC: %v", err)
 	}
 
