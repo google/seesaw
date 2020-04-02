@@ -5,6 +5,8 @@ OVERLAY_FILES = {
     # From :build step
     "scripts/seesaw-bin-linux-amd64.tar.gz": "seesaw-bin-linux-amd64.tar.gz",
     "scripts/provision-script.sh": "run/provision-script.sh",
+    # Configure ARP notify
+    "etc_sysctl_d_80-arp-notify_conf": "etc/sysctl.d/80-arp-notify.conf",
     # Configure toolbox.
     "etc_default_toolbox": "etc/default/toolbox",
     # From: extract_toolbox
