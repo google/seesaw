@@ -26,8 +26,8 @@ import (
 
 	"github.com/google/seesaw/common/seesaw"
 	"github.com/google/seesaw/common/server"
-	"github.com/google/seesaw/engine/config"
 	"github.com/google/seesaw/engine"
+	"github.com/google/seesaw/engine/config"
 
 	conf "github.com/dlintw/goconf"
 	log "github.com/golang/glog"
@@ -191,6 +191,11 @@ func main() {
 	engineCfg.ServiceAnycastIPv6 = serviceAnycastIPv6
 	engineCfg.SocketPath = *socketPath
 	engineCfg.VRID = vrid
+
+	// removes previous leftover socket.
+	if err := server.RemoveUnixSocket(engineCfg.SocketPath); err != nil {
+		log.Exitf("Failed to remove socket: %v", err)
+	}
 
 	// Gentlemen, start your engines...
 	engine := engine.NewEngine(&engineCfg)
