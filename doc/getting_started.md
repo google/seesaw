@@ -26,7 +26,7 @@ started.  There are a number of ways that this can be completed.
 
 ### Manually
 
-The various kerel modules can be loaded manually with the command `modprobe`:
+The various kernel modules can be loaded manually with the command `modprobe`:
 
 ```
 $ modprobe ip_vs
