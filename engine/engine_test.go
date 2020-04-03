@@ -123,8 +123,7 @@ func (lb *dummyLBInterface) DeleteVserver(v *seesaw.Vserver, af seesaw.AF) error
 }
 
 func newTestEngine() *Engine {
-	e := NewEngine(nil)
-	e.ncc = &dummyNCC{}
+	e := newEngineWithNCC(nil, &dummyNCC{})
 	e.lbInterface = newDummyLBInterface()
 	return e
 }
