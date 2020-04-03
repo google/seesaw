@@ -100,7 +100,7 @@ func TestGetStats(t *testing.T) {
 				"svc-1": vsOf(time.Time{}, true),
 				"svc-2": vsOf(time.Now(), false),
 			},
-			reasonContains: "Healtheck is not done yet",
+			reasonContains: "Healthcheck is not done yet",
 		},
 		{
 			desc:     "ready - healthcheck is not done but vs is not required",
