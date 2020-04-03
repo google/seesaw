@@ -36,7 +36,7 @@ var (
 	configCheckInterval = flag.Duration("config_check_interval", 15*time.Second,
 		"How frequently to poll the engine for HAConfig changes")
 
-	configCheckMaxFailures = flag.Int("config_check_max_failures", 3,
+	configCheckMaxFailures = flag.Int("config_check_max_failures", 15,
 		"The maximum allowable number of consecutive config check failures")
 
 	configCheckRetryDelay = flag.Duration("config_check_retry_delay", 2*time.Second,
@@ -54,10 +54,10 @@ var (
 	statusReportInterval = flag.Duration("status_report_interval", 3*time.Second,
 		"How frequently to report the current HAStatus to the engine")
 
-	statusReportMaxFailures = flag.Int("status_report_max_failures", 3,
+	statusReportMaxFailures = flag.Int("status_report_max_failures", 15,
 		"The maximum allowable number of consecutive status report failures")
 
-	statusReportRetryDelay = flag.Duration("status_report_retry_delay", 10*time.Second,
+	statusReportRetryDelay = flag.Duration("status_report_retry_delay", 2*time.Second,
 		"Time between status report retries")
 
 	testLocalAddr = flag.String("local_addr", "",
@@ -132,7 +132,7 @@ func main() {
 		StatusReportMaxFailures: *statusReportMaxFailures,
 		StatusReportRetryDelay:  *statusReportRetryDelay,
 	}
-	n := ha.NewNode(nc, conn, engine)
+	n := ha.NewNode(nc, conn, engine, *engineSocket)
 	server.ShutdownHandler(n)
 
 	if err = n.Run(); err != nil {

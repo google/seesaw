@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
+	"gopkg.in/fsnotify.v1"
 
 	log "github.com/golang/glog"
 )
@@ -77,6 +78,7 @@ type Node struct {
 	NodeConfig
 	conn                 HAConn
 	engine               Engine
+	engineSocket         string
 	statusLock           sync.RWMutex
 	haStatus             seesaw.HAStatus
 	sendCount            uint64
@@ -90,11 +92,12 @@ type Node struct {
 }
 
 // NewNode creates a new Node with the given NodeConfig and HAConn.
-func NewNode(cfg NodeConfig, conn HAConn, engine Engine) *Node {
+func NewNode(cfg NodeConfig, conn HAConn, engine Engine, socket string) *Node {
 	n := &Node{
 		NodeConfig:        cfg,
 		conn:              conn,
 		engine:            engine,
+		engineSocket:      socket,
 		errChannel:        make(chan error),
 		recvChannel:       make(chan *advertisement, 20),
 		stopSenderChannel: make(chan seesaw.HAState),
@@ -161,6 +164,7 @@ func (n *Node) Run() error {
 	go n.receiveAdvertisements()
 	go n.reportStatus()
 	go n.checkConfig()
+	go n.watchEngine()
 
 	for n.state() != seesaw.HAShutdown {
 		if err := n.runOnce(); err != nil {
@@ -168,6 +172,42 @@ func (n *Node) Run() error {
 		}
 	}
 	return nil
+}
+
+// watchEngine monitors engine socket and shutdown current process if it's removed.
+// It's needed to have a quick failover when engine is crashed.
+func (n *Node) watchEngine() {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatalf("Failed to create fsnotify watcher: %v", err)
+	}
+	defer func() {
+		watcher.Close()
+		// graceful shutdown
+		n.Shutdown()
+	}()
+
+	if err := watcher.Add(n.engineSocket); err != nil {
+		log.Errorf("watcher.Add failed: %v", err)
+		return
+	}
+
+	for {
+		select {
+		// watch for events
+		case event := <-watcher.Events:
+			if event.Op == fsnotify.Remove {
+				log.Error("Engine has been terminated")
+				return
+			}
+
+			// watch for errors
+		case err := <-watcher.Errors:
+			log.Errorf("Failed to watch engine socket: %v: ", err)
+			return
+		}
+
+	}
 }
 
 // Shutdown puts this Node in SHUTDOWN state and causes Run() to return.

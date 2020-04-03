@@ -52,7 +52,7 @@ func newTestNode() *Node {
 		},
 		MasterAdvertInterval: 60 * time.Second,
 	}
-	n := NewNode(nc, haConn, engine)
+	n := NewNode(nc, haConn, engine, "/dev/null")
 	// force runOnce() to timeout immediately
 	n.masterDownInterval = 1
 	return n
