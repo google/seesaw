@@ -96,3 +96,5 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
+# gopkg.in/fsnotify.v1 v1.4.7
+gopkg.in/fsnotify.v1
