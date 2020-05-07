@@ -209,6 +209,7 @@ type Check struct {
 
 	lock      sync.RWMutex
 	blocking  bool
+	dryrun    bool
 	start     time.Time
 	failed    uint64
 	failures  uint64
@@ -303,7 +304,13 @@ func (hc *Check) healthcheck() {
 		return
 	}
 	start := time.Now()
-	result := hc.execute()
+
+	var result *Result
+	if hc.dryrun {
+		result = complete(start, "dryrun mode; always succeed", true, nil)
+	} else {
+		result = hc.execute()
+	}
 
 	status := "SUCCESS"
 	if !result.Success {
@@ -384,6 +391,11 @@ func (hc *Check) Blocking(block bool) {
 	hc.update = make(chan Config, len)
 }
 
+// Dryrun enables or disables dryrun mode for a healthcheck.
+func (hc *Check) Dryrun(dryrun bool) {
+	hc.dryrun = dryrun
+}
+
 // Update queues a healthcheck configuration update for processing.
 func (hc *Check) Update(config *Config) {
 	if hc.blocking {
@@ -406,6 +418,7 @@ type ServerConfig struct {
 	MaxFailures    int
 	NotifyInterval time.Duration
 	RetryDelay     time.Duration
+	DryRun         bool
 }
 
 var defaultServerConfig = ServerConfig{
@@ -531,6 +544,7 @@ func (s *Server) manager() {
 			for id := range configs {
 				if s.healthchecks[id] == nil {
 					hc := NewCheck(s.notify)
+					hc.Dryrun(s.config.DryRun)
 					s.healthchecks[id] = hc
 					go hc.Run(checkTicker.C)
 				}
