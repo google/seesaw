@@ -47,6 +47,10 @@ var (
 		healthcheck.DefaultServerConfig().MaxFailures,
 		"The maximum number of consecutive notification failures")
 
+	notifyInterval = flag.Duration("notify_interval",
+		healthcheck.DefaultServerConfig().NotifyInterval,
+		"The time between notifications")
+
 	retryDelay = flag.Duration("retry_delay",
 		healthcheck.DefaultServerConfig().RetryDelay,
 		"The time between notification RPC retries")
@@ -57,10 +61,12 @@ func main() {
 
 	cfg := healthcheck.DefaultServerConfig()
 
+	cfg.BatchDelay = *batchDelay
 	cfg.BatchSize = *batchSize
 	cfg.ChannelSize = *channelSize
 	cfg.EngineSocket = *engineSocket
 	cfg.MaxFailures = *maxFailures
+	cfg.NotifyInterval = *notifyInterval
 	cfg.RetryDelay = *retryDelay
 
 	hc := healthcheck.NewServer(&cfg)
