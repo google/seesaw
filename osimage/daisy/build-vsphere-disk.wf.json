@@ -6,7 +6,7 @@
       "Description": "Image version to embed into /etc/cloud/build.info"
     },
     "worker_image": "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts",
-    "guest_base_image": "projects/gke-on-prem-staging/global/images/ubuntu-gke-onprem-1804-1-15-v20200429",
+    "guest_base_image": "projects/gke-on-prem-staging/global/images/ubuntu-gke-onprem-1804-1-16-devel-v20200403",
     "service_account": "compute-osimage-builder@louhi-qa.iam.gserviceaccount.com",
     "target_image_size": "10",
     "target_image_name": "image",

@@ -28,7 +28,7 @@ DAISY_SOURCES_PATH=$(get_instance_attribute 'daisy-sources-path')
 TARGET_IMAGE_NAME=$(get_instance_attribute 'target-image-name')
 IMAGE_VERSION=$(get_instance_attribute 'image-version')
 # Docker version to be installed in Host, should be compatible with Target OS
-# gsutil cat gs://gke-on-prem-os-ubuntu-source/ubuntu-gke-onprem-1804-1-15-v20200429.manifest | grep docker.io
+# gsutil cat gs://gke-on-prem-os-ubuntu-source/ubuntu-gke-onprem-1804-1-16-devel-v20200403.manifest | grep docker.io
 DOCKER_VERSION=19.03.2-0ubuntu1~18.04.0.1
 DOCKER_PPA=docker1903-k8s
 
