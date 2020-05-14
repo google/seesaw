@@ -524,3 +524,27 @@ func TestCheckTimeout(t *testing.T) {
 		t.Errorf("Expected state change notification not received")
 	}
 }
+
+func TestCheckDryrun(t *testing.T) {
+	notify := make(chan *Notification, 10)
+	hc := NewCheck(notify)
+	hc.Blocking(true)
+	hc.Dryrun(true)
+	go hc.Run(nil)
+	defer hc.Stop()
+
+	config := NewConfig(1, &fakeChecker{succeed: false})
+	config.Interval = 250 * time.Millisecond
+	hc.Update(config)
+
+	// We should have a notification for StateHealthy
+	select {
+	case n := <-notify:
+		if n.State != StateHealthy {
+			t.Errorf("Unexpected state - got %v, want %v",
+				n.State, StateHealthy)
+		}
+	default:
+		t.Errorf("Expected state change notification not received")
+	}
+}
