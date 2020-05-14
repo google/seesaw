@@ -538,13 +538,9 @@ func TestCheckDryrun(t *testing.T) {
 	hc.Update(config)
 
 	// We should have a notification for StateHealthy
-	select {
-	case n := <-notify:
-		if n.State != StateHealthy {
-			t.Errorf("Unexpected state - got %v, want %v",
-				n.State, StateHealthy)
-		}
-	default:
-		t.Errorf("Expected state change notification not received")
+	n := <-notify
+	if n.State != StateHealthy {
+		t.Errorf("Unexpected state - got %v, want %v",
+			n.State, StateHealthy)
 	}
 }
