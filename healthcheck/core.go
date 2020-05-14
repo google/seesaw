@@ -360,16 +360,17 @@ func (hc *Check) Notify() {
 func (hc *Check) execute() *Result {
 	ch := make(chan *Result, 1)
 	checker := hc.Checker
+	timeout := hc.Timeout
 	go func() {
 		// TODO(jsing): Determine a way to ensure that this go routine
 		// does not linger.
-		ch <- checker.Check(hc.Timeout)
+		ch <- checker.Check(timeout)
 	}()
 	select {
 	case result := <-ch:
 		return result
-	case <-time.After(hc.Timeout):
-		return &Result{"Timed out", false, hc.Timeout, nil}
+	case <-time.After(timeout):
+		return &Result{"Timed out", false, timeout, nil}
 	}
 }
 
