@@ -1,0 +1,25 @@
+name: Build and Test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+        go: [1.13, 1.12]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+    - name: Install Dependencies
+      run: |
+        sudo apt-get install libnl-3-dev libnl-genl-3-dev
+    - name: Build
+      run: |
+        go build ./...
+    - name: Test
+      run: |
+        go test -cover -race ./...
