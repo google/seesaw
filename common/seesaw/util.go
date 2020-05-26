@@ -169,25 +169,6 @@ func (h HAConfig) String() string {
 		h.Enabled, h.LocalAddr, h.RemoteAddr, h.Priority, h.VRID)
 }
 
-// String returns the string representation of an HAState.
-func (h HAState) String() string {
-	switch h {
-	case HAUnknown:
-		return "Unknown"
-	case HABackup:
-		return "Backup"
-	case HADisabled:
-		return "Disabled"
-	case HAError:
-		return "Error"
-	case HAMaster:
-		return "Master"
-	case HAShutdown:
-		return "Shutdown"
-	}
-	return "(invalid)"
-}
-
 // Equal reports whether this VLAN is equal to the given VLAN.
 func (v *VLAN) Equal(other *VLAN) bool {
 	// Exclude backend and VIP counters from comparison.
