@@ -13,6 +13,7 @@ import (
 	"github.com/google/seesaw/common/ipc"
 	"github.com/google/seesaw/common/seesaw"
 	"github.com/google/seesaw/common/server"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 type fakeIPC struct {
@@ -107,7 +108,7 @@ func TestRefresh(t *testing.T) {
 
 	cache := newStatsCache(socketPath, threshold)
 
-	ha := &seesaw.HAStatus{State: seesaw.HABackup}
+	ha := &seesaw.HAStatus{State: spb.HaState_BACKUP}
 	fakeIPC.ha = ha
 	cs := &seesaw.ConfigStatus{LastUpdate: time.Date(2000, 2, 1, 12, 30, 0, 0, time.UTC)}
 	fakeIPC.cs = cs

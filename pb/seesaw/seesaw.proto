@@ -1,0 +1,38 @@
+// Copyright 2020 Google Inc. All Rights Reserved
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+option go_package = "github.com/google/seesaw/pb/seesaw";
+
+// High-Availability states for a Seesaw Node.
+enum HaState {
+  // State of the node could not be determined.
+  UNKNOWN = 0;
+
+  // Node is in a ready but non-serving state.
+  BACKUP = 1;
+
+  // Node is disabled, will not serve traffic.
+  DISABLED = 2;
+
+  // Node is in a failure state.
+  ERROR = 3;
+
+  // Node is in an active and serving state.
+  LEADER = 4;
+
+  // Node is in shutdown state and will stop serving requests.
+  SHUTDOWN = 5;
+}

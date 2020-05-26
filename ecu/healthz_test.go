@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
+
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 var (
@@ -24,15 +26,15 @@ func TestHealthz(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	tests := []struct {
-		state       seesaw.HAState
+		state       spb.HaState
 		cacheFailed bool
 		method      string
 		expectCode  int
 	}{
-		{state: seesaw.HABackup, method: http.MethodGet, expectCode: http.StatusOK},
-		{state: seesaw.HAMaster, method: http.MethodGet, expectCode: http.StatusOK},
-		{state: seesaw.HAUnknown, method: http.MethodGet, expectCode: http.StatusServiceUnavailable},
-		{state: seesaw.HABackup, method: http.MethodPost, expectCode: http.StatusMethodNotAllowed},
+		{state: spb.HaState_BACKUP, method: http.MethodGet, expectCode: http.StatusOK},
+		{state: spb.HaState_LEADER, method: http.MethodGet, expectCode: http.StatusOK},
+		{state: spb.HaState_UNKNOWN, method: http.MethodGet, expectCode: http.StatusServiceUnavailable},
+		{state: spb.HaState_BACKUP, method: http.MethodPost, expectCode: http.StatusMethodNotAllowed},
 		{cacheFailed: true, method: http.MethodGet, expectCode: http.StatusInternalServerError},
 	}
 

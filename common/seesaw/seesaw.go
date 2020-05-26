@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/google/seesaw/ipvs"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 const (
@@ -97,22 +98,10 @@ func (sc Component) String() string {
 	return "(unknown)"
 }
 
-// HAState indicates the High-Availability state of a Seesaw Node.
-type HAState int
-
-const (
-	HAUnknown HAState = iota
-	HABackup
-	HADisabled
-	HAError
-	HAMaster
-	HAShutdown
-)
-
 // HAStatus indicates the High-Availability status for a Seesaw Node.
 type HAStatus struct {
 	LastUpdate     time.Time
-	State          HAState
+	State          spb.HaState
 	Since          time.Time
 	Sent           uint64
 	Received       uint64
@@ -403,7 +392,7 @@ type Host struct {
 type Node struct {
 	Host
 	Priority        uint8
-	State           HAState
+	State           spb.HaState
 	AnycastEnabled  bool
 	BGPEnabled      bool
 	VserversEnabled bool

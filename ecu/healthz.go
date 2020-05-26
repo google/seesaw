@@ -8,7 +8,7 @@ import (
 	"time"
 
 	log "github.com/golang/glog"
-	"github.com/google/seesaw/common/seesaw"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 type healthzServer struct {
@@ -36,7 +36,7 @@ func (s *healthzServer) isAlive() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return ha.State == seesaw.HABackup || ha.State == seesaw.HAMaster, nil
+	return ha.State == spb.HaState_BACKUP || ha.State == spb.HaState_LEADER, nil
 }
 
 func (s *healthzServer) handle(w http.ResponseWriter, r *http.Request) {

@@ -1,10 +1,10 @@
 package prom
 
 import (
-	"github.com/google/seesaw/common/seesaw"
 	"github.com/prometheus/client_golang/prometheus"
 
 	log "github.com/golang/glog"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 type cpCollector struct {
@@ -44,7 +44,7 @@ func (c *cpCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 	var isMaster float64
-	if ha.State == seesaw.HAMaster {
+	if ha.State == spb.HaState_LEADER {
 		isMaster = 1
 	}
 	ch <- c.isMaster.mustNewConstMetric(isMaster)

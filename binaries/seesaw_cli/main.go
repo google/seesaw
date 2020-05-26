@@ -32,6 +32,7 @@ import (
 	"github.com/google/seesaw/common/conn"
 	"github.com/google/seesaw/common/ipc"
 	"github.com/google/seesaw/common/seesaw"
+	spb "github.com/google/seesaw/pb/seesaw"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -159,7 +160,7 @@ func interactive() {
 	if err != nil {
 		fatalf("Failed to get HA status: %v", err)
 	}
-	if ha.State != seesaw.HAMaster {
+	if ha.State != spb.HaState_LEADER {
 		fmt.Println("WARNING: This seesaw is not currently the master.")
 	}
 

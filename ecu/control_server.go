@@ -12,6 +12,7 @@ import (
 	"github.com/google/seesaw/common/seesaw"
 
 	ecupb "github.com/google/seesaw/pb/ecu"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 type controlServer struct {
@@ -53,17 +54,17 @@ func (c *controlServer) Failover(ctx context.Context, in *ecupb.FailoverRequest)
 	return &ecupb.FailoverResponse{}, nil
 }
 
-func haStateToProto(state seesaw.HAState) ecupb.SeesawStats_HAState {
+func haStateToProto(state spb.HaState) ecupb.SeesawStats_HAState {
 	switch state {
-	case seesaw.HABackup:
+	case spb.HaState_BACKUP:
 		return ecupb.SeesawStats_HA_BACKUP
-	case seesaw.HADisabled:
+	case spb.HaState_DISABLED:
 		return ecupb.SeesawStats_HA_DISABLED
-	case seesaw.HAError:
+	case spb.HaState_ERROR:
 		return ecupb.SeesawStats_HA_ERROR
-	case seesaw.HAMaster:
+	case spb.HaState_LEADER:
 		return ecupb.SeesawStats_HA_MASTER
-	case seesaw.HAShutdown:
+	case spb.HaState_SHUTDOWN:
 		return ecupb.SeesawStats_HA_SHUTDOWN
 	default:
 		return ecupb.SeesawStats_HA_UNKNOWN
@@ -107,13 +108,13 @@ Here is the timeline when LB is rebooted:
 *   # Now there is a new vs6 comes in. more_init_config is still false because it won't change once becomes true
 *   # vs6 is not "MustReady" so LB is still ready even though OldestHealthCheck of vs6 is zero
 */
-func checkReadiness(stats *statsCache) (seesaw.HAState, string, error) {
+func checkReadiness(stats *statsCache) (spb.HaState, string, error) {
 	ha, err := stats.GetHAStatus()
 	if err != nil {
-		return seesaw.HAUnknown, "", fmt.Errorf("failed to get HA status: %v", err)
+		return spb.HaState_UNKNOWN, "", fmt.Errorf("failed to get HA status: %v", err)
 	}
 	state := ha.State
-	if state != seesaw.HABackup && state != seesaw.HAMaster {
+	if state != spb.HaState_BACKUP && state != spb.HaState_LEADER {
 		return state, fmt.Sprintf("HAState %q is neither master or backup.", state.String()), nil
 	}
 

@@ -35,6 +35,7 @@ import (
 	"github.com/google/seesaw/engine/config"
 	ncclient "github.com/google/seesaw/ncc/client"
 	ncctypes "github.com/google/seesaw/ncc/types"
+	spb "github.com/google/seesaw/pb/seesaw"
 
 	log "github.com/golang/glog"
 )
@@ -173,7 +174,7 @@ func (e *Engine) queueOverride(o seesaw.Override) {
 }
 
 // setHAState tells the engine what its current HAState should be.
-func (e *Engine) setHAState(state seesaw.HAState) error {
+func (e *Engine) setHAState(state spb.HaState) error {
 	select {
 	case e.haManager.stateChan <- state:
 	default:
@@ -200,7 +201,7 @@ func (e *Engine) haConfig() (*seesaw.HAConfig, error) {
 	}
 	// TODO(jsing): This does not allow for IPv6-only operation.
 	return &seesaw.HAConfig{
-		Enabled:    n.State != seesaw.HADisabled,
+		Enabled:    n.State != spb.HaState_DISABLED,
 		LocalAddr:  e.config.Node.IPv4Addr,
 		RemoteAddr: e.config.VRRPDestIP,
 		Priority:   n.Priority,
@@ -328,7 +329,7 @@ func (e *Engine) gratuitousARP() {
 	for {
 		select {
 		case <-arpTicker.C:
-			if e.haManager.state() != seesaw.HAMaster {
+			if e.haManager.state() != spb.HaState_LEADER {
 				if announced {
 					log.Infof("Stopping gratuitous ARPs for %s", e.config.ClusterVIP.IPv4Addr)
 					announced = false
@@ -418,7 +419,7 @@ func (e *Engine) manager() {
 
 		case <-e.haManager.timer():
 			log.Infof("Timed out waiting for HAState")
-			e.haManager.setState(seesaw.HAUnknown)
+			e.haManager.setState(spb.HaState_UNKNOWN)
 
 		case svs := <-e.vserverChan:
 			if _, ok := e.vservers[svs.Name]; !ok {

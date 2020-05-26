@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/seesaw/common/seesaw"
 	"github.com/google/seesaw/ecu/prom/testutil"
+	spb "github.com/google/seesaw/pb/seesaw"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -34,7 +35,7 @@ func (f *fakeStats) GetEngineStatus() (*seesaw.EngineStatus, error) {
 func TestCPCollector(t *testing.T) {
 	f := &fakeStats{
 		ha: &seesaw.HAStatus{
-			State: seesaw.HAMaster,
+			State: spb.HaState_LEADER,
 		},
 		es: &seesaw.EngineStatus{
 			Uptime: time.Second * 10,

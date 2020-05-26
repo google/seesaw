@@ -10,6 +10,7 @@ import (
 	"github.com/google/seesaw/common/seesaw"
 
 	ecupb "github.com/google/seesaw/pb/ecu"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 func vsOf(oldestHCTime time.Time, mustReady bool) *seesaw.Vserver {
@@ -22,7 +23,7 @@ func vsOf(oldestHCTime time.Time, mustReady bool) *seesaw.Vserver {
 func TestGetStats(t *testing.T) {
 	tests := []struct {
 		desc           string
-		ha             seesaw.HAState
+		ha             spb.HaState
 		configTS       time.Time
 		moreInitConfig bool
 		vsList         map[string]*seesaw.Vserver
@@ -30,7 +31,7 @@ func TestGetStats(t *testing.T) {
 	}{
 		{
 			desc:     "ready as master",
-			ha:       seesaw.HAMaster,
+			ha:       spb.HaState_LEADER,
 			configTS: time.Now(),
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Now(), false),
@@ -38,7 +39,7 @@ func TestGetStats(t *testing.T) {
 		},
 		{
 			desc:     "ready as backup",
-			ha:       seesaw.HABackup,
+			ha:       spb.HaState_BACKUP,
 			configTS: time.Now(),
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Now(), false),
@@ -46,7 +47,7 @@ func TestGetStats(t *testing.T) {
 		},
 		{
 			desc:     "ready multiple svc",
-			ha:       seesaw.HAMaster,
+			ha:       spb.HaState_LEADER,
 			configTS: time.Now(),
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Now(), false),
@@ -55,7 +56,7 @@ func TestGetStats(t *testing.T) {
 		},
 		{
 			desc:     "not ready - HAState",
-			ha:       seesaw.HAShutdown,
+			ha:       spb.HaState_SHUTDOWN,
 			configTS: time.Now(),
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Now(), false),
@@ -64,7 +65,7 @@ func TestGetStats(t *testing.T) {
 		},
 		{
 			desc:     "not ready - no config push",
-			ha:       seesaw.HAMaster,
+			ha:       spb.HaState_LEADER,
 			configTS: time.Time{},
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Now(), false),
@@ -73,7 +74,7 @@ func TestGetStats(t *testing.T) {
 		},
 		{
 			desc:     "not ready - config too old",
-			ha:       seesaw.HAMaster,
+			ha:       spb.HaState_LEADER,
 			configTS: time.Now().Add(-cfgReadinessThreshold),
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Now(), false),
@@ -82,19 +83,19 @@ func TestGetStats(t *testing.T) {
 		},
 		{
 			desc:           "not ready - more init config",
-			ha:             seesaw.HABackup,
+			ha:             spb.HaState_BACKUP,
 			configTS:       time.Now(),
 			moreInitConfig: true,
 			reasonContains: "Processing init config",
 		},
 		{
 			desc:     "ready - no service",
-			ha:       seesaw.HABackup,
+			ha:       spb.HaState_BACKUP,
 			configTS: time.Now(),
 		},
 		{
 			desc:     "not ready - healthcheck is not done",
-			ha:       seesaw.HABackup,
+			ha:       spb.HaState_BACKUP,
 			configTS: time.Now(),
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Time{}, true),
@@ -104,7 +105,7 @@ func TestGetStats(t *testing.T) {
 		},
 		{
 			desc:     "ready - healthcheck is not done but vs is not required",
-			ha:       seesaw.HABackup,
+			ha:       spb.HaState_BACKUP,
 			configTS: time.Now(),
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Time{}, false),
@@ -112,7 +113,7 @@ func TestGetStats(t *testing.T) {
 		},
 		{
 			desc:     "not ready - healthcheck too old",
-			ha:       seesaw.HABackup,
+			ha:       spb.HaState_BACKUP,
 			configTS: time.Now(),
 			vsList: map[string]*seesaw.Vserver{
 				"svc-1": vsOf(time.Now(), false),

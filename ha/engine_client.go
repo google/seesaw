@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/seesaw/common/ipc"
 	"github.com/google/seesaw/common/seesaw"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 const engineTimeout = 10 * time.Second
@@ -33,7 +34,7 @@ const engineTimeout = 10 * time.Second
 // Engine represents an interface to a Seesaw Engine.
 type Engine interface {
 	HAConfig() (*seesaw.HAConfig, error)
-	HAState(seesaw.HAState) error
+	HAState(spb.HaState) error
 	HAUpdate(seesaw.HAStatus) (bool, error)
 }
 
@@ -62,7 +63,7 @@ func (e *EngineClient) HAConfig() (*seesaw.HAConfig, error) {
 }
 
 // HAState informs the Seesaw Engine of the current HAState.
-func (e *EngineClient) HAState(state seesaw.HAState) error {
+func (e *EngineClient) HAState(state spb.HaState) error {
 	engineConn, err := net.DialTimeout("unix", e.Socket, engineTimeout)
 	if err != nil {
 		return fmt.Errorf("HAState: Dial failed: %v", err)
@@ -109,7 +110,7 @@ func (e *DummyEngine) HAConfig() (*seesaw.HAConfig, error) {
 }
 
 // HAState does nothing.
-func (e *DummyEngine) HAState(state seesaw.HAState) error {
+func (e *DummyEngine) HAState(state spb.HaState) error {
 	return nil
 }
 

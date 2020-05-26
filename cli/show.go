@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
+	spb "github.com/google/seesaw/pb/seesaw"
 	"github.com/google/seesaw/quagga"
 )
 
@@ -205,7 +206,7 @@ func showNode(cli *SeesawCLI, args []string) error {
 		printVal("Site:", cs.Site)
 		printVal("IPv4 Address:", node.IPv4Printable())
 		printVal("IPv6 Address:", node.IPv6Printable())
-		printVal("HA Enabled:", node.State != seesaw.HADisabled)
+		printVal("HA Enabled:", node.State != spb.HaState_DISABLED)
 		printVal("Anycast Enabled:", node.AnycastEnabled)
 		printVal("BGP Enabled:", node.BGPEnabled)
 		printVal("Vservers Enabled:", node.VserversEnabled)
@@ -214,7 +215,7 @@ func showNode(cli *SeesawCLI, args []string) error {
 	printHdr("Nodes")
 	for i, node := range cs.Nodes {
 		enabled := "enabled"
-		if node.State == seesaw.HADisabled {
+		if node.State == spb.HaState_DISABLED {
 			enabled = "disabled"
 		}
 		// TODO(baptr): Figure out how to identify/mark local node.
