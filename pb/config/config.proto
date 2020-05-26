@@ -18,6 +18,8 @@
 
 syntax = "proto2";
 
+option go_package = "github.com/google/seesaw/pb/config";
+
 message Host {
   // Servicedb statuses
   enum Status {
