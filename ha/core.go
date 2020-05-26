@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
+	spb "github.com/google/seesaw/pb/seesaw"
 	"gopkg.in/fsnotify.v1"
 
 	log "github.com/golang/glog"
@@ -87,7 +88,7 @@ type Node struct {
 	lastMasterAdvertTime time.Time
 	errChannel           chan error
 	recvChannel          chan *advertisement
-	stopSenderChannel    chan seesaw.HAState
+	stopSenderChannel    chan spb.HaState
 	shutdownChannel      chan bool
 }
 
@@ -100,10 +101,10 @@ func NewNode(cfg NodeConfig, conn HAConn, engine Engine, socket string) *Node {
 		engineSocket:      socket,
 		errChannel:        make(chan error),
 		recvChannel:       make(chan *advertisement, 20),
-		stopSenderChannel: make(chan seesaw.HAState),
+		stopSenderChannel: make(chan spb.HaState),
 		shutdownChannel:   make(chan bool),
 	}
-	n.setState(seesaw.HABackup)
+	n.setState(spb.HaState_BACKUP)
 	n.resetMasterDownInterval(cfg.MasterAdvertInterval)
 	return n
 }
@@ -120,14 +121,14 @@ func (n *Node) resetMasterDownInterval(advertInterval time.Duration) {
 }
 
 // state returns the current HA state for this node.
-func (n *Node) state() seesaw.HAState {
+func (n *Node) state() spb.HaState {
 	n.statusLock.RLock()
 	defer n.statusLock.RUnlock()
 	return n.haStatus.State
 }
 
 // setState changes the HA state for this node.
-func (n *Node) setState(s seesaw.HAState) {
+func (n *Node) setState(s spb.HaState) {
 	n.statusLock.Lock()
 	defer n.statusLock.Unlock()
 	if n.haStatus.State != s {
@@ -166,7 +167,7 @@ func (n *Node) Run() error {
 	go n.checkConfig()
 	go n.watchEngine()
 
-	for n.state() != seesaw.HAShutdown {
+	for n.state() != spb.HaState_SHUTDOWN {
 		if err := n.runOnce(); err != nil {
 			return err
 		}
@@ -217,29 +218,29 @@ func (n *Node) Shutdown() {
 
 func (n *Node) runOnce() error {
 	switch s := n.state(); s {
-	case seesaw.HABackup:
+	case spb.HaState_BACKUP:
 		switch newState := n.doBackupTasks(); newState {
-		case seesaw.HABackup:
+		case spb.HaState_BACKUP:
 			// do nothing
-		case seesaw.HAMaster:
+		case spb.HaState_LEADER:
 			log.Infof("Received %v advertisements, %v still queued for processing",
 				atomic.LoadUint64(&n.receiveCount), len(n.recvChannel))
 			log.Infof("Last master advertisement dequeued at %v", n.lastMasterAdvertTime.Format(time.StampMilli))
 			n.becomeMaster()
-		case seesaw.HAShutdown:
+		case spb.HaState_SHUTDOWN:
 			n.becomeShutdown()
 		default:
 			return fmt.Errorf("runOnce: Can't handle transition from %v to %v", s, newState)
 		}
 
-	case seesaw.HAMaster:
+	case spb.HaState_LEADER:
 		switch newState := n.doMasterTasks(); newState {
-		case seesaw.HAMaster:
+		case spb.HaState_LEADER:
 			// do nothing
-		case seesaw.HABackup:
+		case spb.HaState_BACKUP:
 			log.Infof("Sent %v advertisements", atomic.LoadUint64(&n.sendCount))
 			n.becomeBackup()
-		case seesaw.HAShutdown:
+		case spb.HaState_SHUTDOWN:
 			n.becomeShutdown()
 		default:
 			return fmt.Errorf("runOnce: Can't handle transition from %v to %v", s, newState)
@@ -253,68 +254,68 @@ func (n *Node) runOnce() error {
 
 func (n *Node) becomeMaster() {
 	log.Infof("Node.becomeMaster")
-	if err := n.engine.HAState(seesaw.HAMaster); err != nil {
+	if err := n.engine.HAState(spb.HaState_LEADER); err != nil {
 		// Ignore for now - reportStatus will notify the engine or die trying.
 		log.Errorf("Failed to notify engine: %v", err)
 	}
 
 	go n.sendAdvertisements()
-	n.setState(seesaw.HAMaster)
+	n.setState(spb.HaState_LEADER)
 }
 
 func (n *Node) becomeBackup() {
 	log.Infof("Node.becomeBackup")
-	if err := n.engine.HAState(seesaw.HABackup); err != nil {
+	if err := n.engine.HAState(spb.HaState_BACKUP); err != nil {
 		// Ignore for now - reportStatus will notify the engine or die trying.
 		log.Errorf("Failed to notify engine: %v", err)
 	}
 
-	n.stopSenderChannel <- seesaw.HABackup
-	n.setState(seesaw.HABackup)
+	n.stopSenderChannel <- spb.HaState_BACKUP
+	n.setState(spb.HaState_BACKUP)
 }
 
 func (n *Node) becomeShutdown() {
 	log.Infof("Node.becomeShutdown")
-	if err := n.engine.HAState(seesaw.HAShutdown); err != nil {
+	if err := n.engine.HAState(spb.HaState_SHUTDOWN); err != nil {
 		// Ignore for now - reportStatus will notify the engine or die trying.
 		log.Errorf("Failed to notify engine: %v", err)
 	}
 
-	if n.state() == seesaw.HAMaster {
-		n.stopSenderChannel <- seesaw.HAShutdown
+	if n.state() == spb.HaState_LEADER {
+		n.stopSenderChannel <- spb.HaState_SHUTDOWN
 		// Sleep for a moment so sendAdvertisements() has a chance to send the shutdown advertisment.
 		time.Sleep(500 * time.Millisecond)
 	}
-	n.setState(seesaw.HAShutdown)
+	n.setState(spb.HaState_SHUTDOWN)
 }
 
-func (n *Node) doMasterTasks() seesaw.HAState {
+func (n *Node) doMasterTasks() spb.HaState {
 	select {
 	case advert := <-n.recvChannel:
 		if advert.Priority == n.Priority {
 			// TODO(angusc): RFC 5798 says we should compare IP addresses at this point.
 			log.Warningf("doMasterTasks: ignoring advertisement with my priority (%v)", advert.Priority)
-			return seesaw.HAMaster
+			return spb.HaState_LEADER
 		}
 		if advert.Priority > n.Priority {
 			log.Infof("doMasterTasks: peer priority (%v) > my priority (%v) - becoming BACKUP",
 				advert.Priority, n.Priority)
 			n.lastMasterAdvertTime = time.Now()
-			return seesaw.HABackup
+			return spb.HaState_BACKUP
 		}
 
 	case <-n.shutdownChannel:
-		return seesaw.HAShutdown
+		return spb.HaState_SHUTDOWN
 
 	case err := <-n.errChannel:
 		log.Errorf("doMasterTasks: %v", err)
-		return seesaw.HAError
+		return spb.HaState_ERROR
 	}
 	// no change
-	return seesaw.HAMaster
+	return spb.HaState_LEADER
 }
 
-func (n *Node) doBackupTasks() seesaw.HAState {
+func (n *Node) doBackupTasks() spb.HaState {
 	remaining := n.masterDownInterval
 	if !n.lastMasterAdvertTime.IsZero() {
 		deadline := n.lastMasterAdvertTime.Add(n.masterDownInterval)
@@ -326,11 +327,11 @@ func (n *Node) doBackupTasks() seesaw.HAState {
 		return n.backupHandleAdvertisement(advert)
 
 	case <-n.shutdownChannel:
-		return seesaw.HAShutdown
+		return spb.HaState_SHUTDOWN
 
 	case err := <-n.errChannel:
 		log.Errorf("doBackupTasks: %v", err)
-		return seesaw.HAError
+		return spb.HaState_ERROR
 
 	case <-timeout:
 		log.Infof("doBackupTasks: timed out waiting for advertisement after %v", remaining)
@@ -340,28 +341,28 @@ func (n *Node) doBackupTasks() seesaw.HAState {
 			return n.backupHandleAdvertisement(advert)
 		default:
 			log.Infof("doBackupTasks: becoming MASTER")
-			return seesaw.HAMaster
+			return spb.HaState_LEADER
 		}
 	}
 }
 
-func (n *Node) backupHandleAdvertisement(advert *advertisement) seesaw.HAState {
+func (n *Node) backupHandleAdvertisement(advert *advertisement) spb.HaState {
 	switch {
 	case advert.Priority == 0:
 		log.Infof("backupHandleAdvertisement: peer priority is 0 - becoming MASTER")
-		return seesaw.HAMaster
+		return spb.HaState_LEADER
 
 	case n.Preempt && advert.Priority < n.Priority:
 		log.Infof("backupHandleAdvertisement: peer priority (%v) < my priority (%v) - becoming MASTER",
 			advert.Priority, n.Priority)
-		return seesaw.HAMaster
+		return spb.HaState_LEADER
 	}
 
 	// Per RFC 5798, set the masterDownInterval based on the advert interval received from the
 	// current master.  AdvertInt is in centiseconds.
 	n.resetMasterDownInterval(time.Millisecond * time.Duration(10*advert.AdvertInt))
 	n.lastMasterAdvertTime = time.Now()
-	return seesaw.HABackup
+	return spb.HaState_BACKUP
 }
 
 func (n *Node) queueAdvertisement(advert *advertisement) {
@@ -398,7 +399,7 @@ func (n *Node) sendAdvertisements() {
 
 		case newState := <-n.stopSenderChannel:
 			ticker.Stop()
-			if newState == seesaw.HAShutdown {
+			if newState == spb.HaState_SHUTDOWN {
 				advert := n.newAdvertisement()
 				advert.Priority = 0
 				if err := n.conn.send(advert, time.Second); err != nil {
@@ -449,7 +450,7 @@ func (n *Node) reportStatus() {
 			}
 			time.Sleep(n.StatusReportRetryDelay)
 		}
-		if failover && n.state() == seesaw.HAMaster {
+		if failover && n.state() == spb.HaState_LEADER {
 			log.Info("Received failover request, initiating shutdown...")
 			n.Shutdown()
 		}

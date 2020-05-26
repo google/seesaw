@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 type dummyHAConn struct{}
@@ -61,8 +62,8 @@ func newTestNode() *Node {
 func TestNoPeer(t *testing.T) {
 	node := newTestNode()
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// clean up
@@ -73,8 +74,8 @@ func TestHighPriorityPeer(t *testing.T) {
 	node := newTestNode()
 	// no incoming advertisements - we should become master
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// incoming advertisement from higher priority peer
@@ -82,14 +83,14 @@ func TestHighPriorityPeer(t *testing.T) {
 	advert.Priority = 255
 	node.queueAdvertisement(&advert)
 	node.runOnce()
-	if node.state() != seesaw.HABackup {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HABackup, node.state())
+	if node.state() != spb.HaState_BACKUP {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_BACKUP, node.state())
 	}
 
 	// no incoming advertisements (i.e. peer is dead)
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// clean up
@@ -99,15 +100,15 @@ func TestHighPriorityPeer(t *testing.T) {
 func TestLowPriorityPeer(t *testing.T) {
 	node := newTestNode()
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// incoming advertisement from lower priority peer
 	node.queueAdvertisement(&vrrpTestAdvert)
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// clean up
@@ -117,15 +118,15 @@ func TestLowPriorityPeer(t *testing.T) {
 func TestWrongVRRPVersion(t *testing.T) {
 	node := newTestNode()
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 	alien := vrrpTestAdvert
 	alien.VersionType = (vrrpVersion + 1) << 4
 	alien.Priority = 255
 	node.queueAdvertisement(&alien)
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// clean up
@@ -135,15 +136,15 @@ func TestWrongVRRPVersion(t *testing.T) {
 func TestWrongVRID(t *testing.T) {
 	node := newTestNode()
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 	alien := vrrpTestAdvert
 	alien.Priority = 255
 	alien.VRID = 2
 	node.queueAdvertisement(&alien)
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// clean up
@@ -155,8 +156,8 @@ func TestPreempt(t *testing.T) {
 	node.Preempt = true
 	node.queueAdvertisement(&vrrpTestAdvert)
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// clean up
@@ -165,8 +166,8 @@ func TestPreempt(t *testing.T) {
 	node = newTestNode()
 	node.queueAdvertisement(&vrrpTestAdvert)
 	node.runOnce()
-	if node.state() != seesaw.HABackup {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HABackup, node.state())
+	if node.state() != spb.HaState_BACKUP {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_BACKUP, node.state())
 	}
 }
 
@@ -176,8 +177,8 @@ func TestShutdown(t *testing.T) {
 	advert.Priority = 0
 	node.queueAdvertisement(&advert)
 	node.runOnce()
-	if node.state() != seesaw.HAMaster {
-		t.Errorf("Expected state to be %v but was %v", seesaw.HAMaster, node.state())
+	if node.state() != spb.HaState_LEADER {
+		t.Errorf("Expected state to be %v but was %v", spb.HaState_LEADER, node.state())
 	}
 
 	// clean up

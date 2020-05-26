@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/seesaw/common/seesaw"
 	pb "github.com/google/seesaw/pb/config"
+	spb "github.com/google/seesaw/pb/seesaw"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -105,7 +106,7 @@ var nodeTests = []struct {
 					IPv4Mask: net.CIDRMask(26, 32),
 				},
 				Priority:        255,
-				State:           seesaw.HAUnknown,
+				State:           spb.HaState_UNKNOWN,
 				AnycastEnabled:  true,
 				BGPEnabled:      true,
 				VserversEnabled: true,
@@ -117,7 +118,7 @@ var nodeTests = []struct {
 					IPv4Mask: net.CIDRMask(26, 32),
 				},
 				Priority:        1,
-				State:           seesaw.HAUnknown,
+				State:           spb.HaState_UNKNOWN,
 				AnycastEnabled:  true,
 				BGPEnabled:      true,
 				VserversEnabled: true,
@@ -135,7 +136,7 @@ var nodeTests = []struct {
 					IPv4Mask: net.CIDRMask(26, 32),
 				},
 				Priority:        255,
-				State:           seesaw.HADisabled,
+				State:           spb.HaState_DISABLED,
 				AnycastEnabled:  true,
 				BGPEnabled:      true,
 				VserversEnabled: true,
@@ -153,7 +154,7 @@ var nodeTests = []struct {
 					IPv4Mask: net.CIDRMask(26, 32),
 				},
 				Priority:        255,
-				State:           seesaw.HADisabled,
+				State:           spb.HaState_DISABLED,
 				AnycastEnabled:  false,
 				BGPEnabled:      false,
 				VserversEnabled: false,
@@ -171,7 +172,7 @@ var nodeTests = []struct {
 					IPv4Mask: net.CIDRMask(26, 32),
 				},
 				Priority:        255,
-				State:           seesaw.HADisabled,
+				State:           spb.HaState_DISABLED,
 				AnycastEnabled:  false,
 				BGPEnabled:      false,
 				VserversEnabled: false,
@@ -183,7 +184,7 @@ var nodeTests = []struct {
 					IPv4Mask: net.CIDRMask(26, 32),
 				},
 				Priority:        1,
-				State:           seesaw.HAUnknown,
+				State:           spb.HaState_UNKNOWN,
 				AnycastEnabled:  true,
 				BGPEnabled:      true,
 				VserversEnabled: true,

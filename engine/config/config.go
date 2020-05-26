@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/seesaw/common/seesaw"
 	pb "github.com/google/seesaw/pb/config"
+	spb "github.com/google/seesaw/pb/seesaw"
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
@@ -300,9 +301,9 @@ func addNodes(c *Cluster, p *pb.Cluster) {
 	}
 
 	for _, n := range p.Node {
-		haState := seesaw.HAUnknown
+		haState := spb.HaState_UNKNOWN
 		if !haEnabled || p.SeesawVip.GetStatus() != n.GetStatus() {
-			haState = seesaw.HADisabled
+			haState = spb.HaState_DISABLED
 		}
 
 		h := protoToHost(n)

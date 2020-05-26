@@ -1,0 +1,24 @@
+syntax = "proto2";
+
+option go_package = "github.com/google/seesaw/pb/seesaw";
+
+// High-Availability states for a Seesaw Node.
+enum HaState {
+  // State of the node could not be determined.
+  UNKNOWN = 0;
+
+  // Node is in a ready but non-serving state.
+  BACKUP = 1;
+
+  // Node is disabled, will not serve traffic.
+  DISABLED = 2;
+
+  // Node is in a failure state.
+  ERROR = 3;
+
+  // Node is in an active and serving state.
+  LEADER = 4;
+
+  // Node is in shutdown state and will stop serving requests.
+  SHUTDOWN = 5;
+}

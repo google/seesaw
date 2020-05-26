@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/google/seesaw/common/seesaw"
+	spb "github.com/google/seesaw/pb/seesaw"
 
 	log "github.com/golang/glog"
 )
@@ -37,7 +38,7 @@ type haManager struct {
 	status          seesaw.HAStatus
 	statusLock      sync.RWMutex
 	timeout         time.Duration
-	stateChan       chan seesaw.HAState
+	stateChan       chan spb.HaState
 	statusChan      chan seesaw.HAStatus
 }
 
@@ -49,16 +50,16 @@ func newHAManager(engine *Engine, timeout time.Duration) *haManager {
 		status: seesaw.HAStatus{
 			LastUpdate: now,
 			Since:      now,
-			State:      seesaw.HAUnknown,
+			State:      spb.HaState_UNKNOWN,
 		},
 		timeout:    timeout,
-		stateChan:  make(chan seesaw.HAState, 1),
+		stateChan:  make(chan spb.HaState, 1),
 		statusChan: make(chan seesaw.HAStatus, 1),
 	}
 }
 
 // state returns the current HA state known by the engine.
-func (h *haManager) state() seesaw.HAState {
+func (h *haManager) state() spb.HaState {
 	h.statusLock.RLock()
 	defer h.statusLock.RUnlock()
 	return h.status.State
@@ -66,14 +67,14 @@ func (h *haManager) state() seesaw.HAState {
 
 // enable enables HA peering for the node on which the engine is running.
 func (h *haManager) enable() {
-	if h.state() == seesaw.HADisabled {
-		h.setState(seesaw.HAUnknown)
+	if h.state() == spb.HaState_DISABLED {
+		h.setState(spb.HaState_UNKNOWN)
 	}
 }
 
 // disable disables HA peering for the node on which the engine is running.
 func (h *haManager) disable() {
-	h.setState(seesaw.HADisabled)
+	h.setState(spb.HaState_DISABLED)
 }
 
 // failover returns true if the HA component should relinquish master state.
@@ -88,7 +89,7 @@ func (h *haManager) failover() bool {
 // requestFailover requests the node to initiate a failover.
 func (h *haManager) requestFailover(peer bool) error {
 	state := h.state()
-	if state == seesaw.HAMaster {
+	if state == spb.HaState_LEADER {
 		h.failoverLock.Lock()
 		defer h.failoverLock.Unlock()
 		if h.failoverPending {
@@ -111,19 +112,19 @@ func (h *haManager) requestFailover(peer bool) error {
 
 // setState sets the HAState of the engine and dispatches events when the state
 // changes.
-func (h *haManager) setState(s seesaw.HAState) {
+func (h *haManager) setState(s spb.HaState) {
 	state := h.state()
 
-	if state == seesaw.HADisabled && s != seesaw.HAUnknown {
+	if state == spb.HaState_DISABLED && s != spb.HaState_UNKNOWN {
 		log.Warningf("Invalid HA state transition %v -> %v", state, s)
 		return
 	}
 
 	if state != s {
 		log.Infof("HA state transition %v -> %v starting", state, s)
-		if s == seesaw.HAMaster {
+		if s == spb.HaState_LEADER {
 			h.engine.becomeMaster()
-		} else if state == seesaw.HAMaster || s == seesaw.HABackup {
+		} else if state == spb.HaState_LEADER || s == spb.HaState_BACKUP {
 			h.engine.becomeBackup()
 		}
 		log.Infof("HA state transition %v -> %v complete", state, s)
@@ -153,7 +154,7 @@ func (h *haManager) setStatus(s seesaw.HAStatus) {
 // timer returns a channel that receives a Time object when the current HA state
 // expires.
 func (h *haManager) timer() <-chan time.Time {
-	if s := h.state(); s == seesaw.HADisabled || s == seesaw.HAUnknown {
+	if s := h.state(); s == spb.HaState_DISABLED || s == spb.HaState_UNKNOWN {
 		return make(chan time.Time)
 	}
 	// TODO(angusc): Make this clock-jump safe.

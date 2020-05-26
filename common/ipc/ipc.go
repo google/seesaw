@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/google/seesaw/common/seesaw"
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 // AuthType specifies the type of authentication established.
@@ -136,7 +137,7 @@ type HAStatus struct {
 // HAState contains data for a HA state IPC.
 type HAState struct {
 	Ctx   *Context
-	State seesaw.HAState
+	State spb.HaState
 }
 
 // Override contains data for an override IPC.
