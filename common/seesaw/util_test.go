@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+
+	spb "github.com/google/seesaw/pb/seesaw"
 )
 
 func newTestHost(offset int, shortname string, ipv4, ipv6 bool) Host {
@@ -71,13 +73,13 @@ var nodes = []Node{
 	{
 		Host:            newTestHost(0, "seesaw1-1", true, true),
 		Priority:        255,
-		State:           HAMaster,
+		State:           spb.HaState_LEADER,
 		VserversEnabled: true,
 	},
 	{
 		Host:            newTestHost(1, "seesaw1-2", true, true),
 		Priority:        1,
-		State:           HABackup,
+		State:           spb.HaState_BACKUP,
 		VserversEnabled: true,
 	},
 }
@@ -312,7 +314,7 @@ var inSubnetsTests = []struct {
 		map[string]*net.IPNet{
 			"10.0.0.0/8":            cidrToNet("10.0.0.0/8"),
 			"2620:0:10cc:100d::/64": cidrToNet("2620:0:10cc:100d::/64"),
-			"192.168.0.0/24":         cidrToNet("192.168.0.0/24"),
+			"192.168.0.0/24":        cidrToNet("192.168.0.0/24"),
 		},
 		false,
 	},
