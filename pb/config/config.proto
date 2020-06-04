@@ -221,6 +221,7 @@ message Vserver {
   repeated Backend backend = 10;
 
   reserved 6; // was legacy_backend
+  reserved "legacy_backend";
 }
 
 message MisconfiguredVserver {
