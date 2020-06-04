@@ -39,6 +39,11 @@ func init() {
 	gob.Register(&healthcheck.UDPChecker{})
 }
 
+var (
+	errAccess  = errors.New("insufficient access")
+	errContext = errors.New("context is nil")
+)
+
 // SeesawEngine provides the IPC interface to the Seesaw Engine.
 type SeesawEngine struct {
 	engine *Engine
@@ -52,11 +57,11 @@ func (s *SeesawEngine) trace(call string, ctx *ipc.Context) {
 func (s *SeesawEngine) Failover(ctx *ipc.Context, reply *int) error {
 	s.trace("Failover", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	return s.engine.haManager.requestFailover(false)
@@ -67,11 +72,11 @@ func (s *SeesawEngine) Failover(ctx *ipc.Context, reply *int) error {
 func (s *SeesawEngine) HAConfig(ctx *ipc.Context, reply *seesaw.HAConfig) error {
 	s.trace("HAConfig", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	c, err := s.engine.haConfig()
@@ -94,11 +99,11 @@ func (s *SeesawEngine) HAUpdate(args *ipc.HAStatus, failover *bool) error {
 	ctx := args.Ctx
 	s.trace("HAUpdate", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	if err := s.engine.setHAStatus(args.Status); err != nil {
@@ -119,11 +124,11 @@ func (s *SeesawEngine) HAState(args *ipc.HAState, reply *int) error {
 	ctx := args.Ctx
 	s.trace("HAState", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	return s.engine.setHAState(args.State)
@@ -133,11 +138,11 @@ func (s *SeesawEngine) HAState(args *ipc.HAState, reply *int) error {
 func (s *SeesawEngine) HAStatus(ctx *ipc.Context, status *seesaw.HAStatus) error {
 	s.trace("HAStatus", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	if status != nil {
@@ -151,11 +156,11 @@ func (s *SeesawEngine) HAStatus(ctx *ipc.Context, status *seesaw.HAStatus) error
 func (s *SeesawEngine) Healthchecks(ctx *ipc.Context, reply *healthcheck.Checks) error {
 	s.trace("Healthchecks", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	configs := s.engine.hcManager.configs()
@@ -174,11 +179,11 @@ func (s *SeesawEngine) HealthState(args *healthcheck.HealthState, reply *int) er
 	ctx := args.Ctx
 	s.trace("HealthState", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	for _, n := range args.Notifications {
@@ -194,11 +199,11 @@ func (s *SeesawEngine) HealthState(args *healthcheck.HealthState, reply *int) er
 func (s *SeesawEngine) ClusterStatus(ctx *ipc.Context, reply *seesaw.ClusterStatus) error {
 	s.trace("ClusterStatus", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	s.engine.clusterLock.RLock()
@@ -222,11 +227,11 @@ func (s *SeesawEngine) ClusterStatus(ctx *ipc.Context, reply *seesaw.ClusterStat
 func (s *SeesawEngine) ConfigStatus(ctx *ipc.Context, reply *seesaw.ConfigStatus) error {
 	s.trace("ConfigStatus", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	s.engine.clusterLock.RLock()
@@ -255,11 +260,11 @@ func (s *SeesawEngine) ConfigStatus(ctx *ipc.Context, reply *seesaw.ConfigStatus
 func (s *SeesawEngine) ConfigReload(ctx *ipc.Context, reply *int) error {
 	s.trace("ConfigReload", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	return s.engine.notifier.Reload()
@@ -274,11 +279,11 @@ func (s *SeesawEngine) ConfigSource(args *ipc.ConfigSource, oldSource *string) e
 	ctx := args.Ctx
 	s.trace("ConfigSource", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	if oldSource != nil {
@@ -300,11 +305,11 @@ func (s *SeesawEngine) ConfigSource(args *ipc.ConfigSource, oldSource *string) e
 func (s *SeesawEngine) BGPNeighbors(ctx *ipc.Context, reply *quagga.Neighbors) error {
 	s.trace("BGPNeighbors", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	if reply == nil {
@@ -320,11 +325,11 @@ func (s *SeesawEngine) BGPNeighbors(ctx *ipc.Context, reply *quagga.Neighbors) e
 func (s *SeesawEngine) VLANs(ctx *ipc.Context, reply *seesaw.VLANs) error {
 	s.trace("VLANs", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	if reply == nil {
@@ -343,11 +348,11 @@ func (s *SeesawEngine) VLANs(ctx *ipc.Context, reply *seesaw.VLANs) error {
 func (s *SeesawEngine) Vservers(ctx *ipc.Context, reply *seesaw.VserverMap) error {
 	s.trace("Vservers", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	s.engine.clusterLock.RLock()
@@ -388,11 +393,11 @@ func (s *SeesawEngine) OverrideBackend(args *ipc.Override, reply *int) error {
 	ctx := args.Ctx
 	s.trace("OverrideBackend", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	if args.Backend == nil {
@@ -410,11 +415,11 @@ func (s *SeesawEngine) OverrideDestination(args *ipc.Override, reply *int) error
 	ctx := args.Ctx
 	s.trace("OverrideDestination", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	if args.Destination == nil {
@@ -432,11 +437,11 @@ func (s *SeesawEngine) OverrideVserver(args *ipc.Override, reply *int) error {
 	ctx := args.Ctx
 	s.trace("OverrideVserver", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	if args.Vserver == nil {
@@ -450,11 +455,11 @@ func (s *SeesawEngine) OverrideVserver(args *ipc.Override, reply *int) error {
 func (s *SeesawEngine) Backends(ctx *ipc.Context, reply *int) error {
 	s.trace("Backends", ctx)
 	if ctx == nil {
-		return errors.New("context is nil")
+		return errContext
 	}
 
 	if !ctx.IsTrusted() {
-		return errors.New("insufficient access")
+		return errAccess
 	}
 
 	// TODO(jsing): Implement this function.
