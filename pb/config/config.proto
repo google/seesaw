@@ -206,11 +206,6 @@ message Vserver {
 
   repeated VserverEntry vserver_entry = 5;
 
-  // The list of backends for this vserver.
-  // TODO(mibus): Kill legacy_backend, and move "backend" down the list.
-  repeated Host legacy_backend = 6;
-  repeated Backend backend = 10;
-
   // The healthchecks to perform on the backends, in addition to those that are
   // VserverEntry specific.
   repeated Healthcheck healthcheck = 7;
@@ -221,6 +216,12 @@ message Vserver {
   // Warning messages about this Vserver (such as misconfigured backends) to be
   // displayed on operator consoles.
   repeated string warning = 9;
+
+  // The list of backends for this vserver.
+  repeated Backend backend = 10;
+
+  reserved 6; // was legacy_backend
+  reserved "legacy_backend";
 }
 
 message MisconfiguredVserver {
