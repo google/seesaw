@@ -610,7 +610,7 @@ func TestVIPSubnets(t *testing.T) {
 }
 
 func TestVIPSubnetFailures(t *testing.T) {
-	for _, test := range vipSubnetTests {
+	for _, test := range vipSubnetFailureTests {
 		filename := filepath.Join(testDataDir, test.in)
 		if _, err := ReadConfig(filename, ""); err == nil {
 			t.Errorf("ReadConfig successfully loaded protobuf file %s for %q, should have failed", test.in, test.desc)
