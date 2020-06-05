@@ -210,12 +210,22 @@ var vipSubnetTests = []struct {
 		make(map[string]*net.IPNet),
 	},
 	{
-		"3 Dedicated VIP Subnets, with duplicates",
+		"2 Dedicated VIP Subnets",
 		"vipsubnets1.pb",
 		map[string]*net.IPNet{
 			"192.168.9.0/24":   cidrToNet("192.168.9.0/24"),
 			"2015:cafe:9::/64": cidrToNet("2015:cafe:9::/64"),
 		},
+	},
+}
+
+var vipSubnetFailureTests = []struct {
+	desc string
+	in   string
+}{
+	{
+		"Duplicate Dedicated VIP Subnets",
+		"vipsubnets2.pb",
 	},
 }
 
@@ -595,6 +605,15 @@ func TestVIPSubnets(t *testing.T) {
 			if !reflect.DeepEqual(*vipSubnet, *got[i]) {
 				t.Errorf("Test %q want %#v, got %#v", test.desc, *vipSubnet, *got[i])
 			}
+		}
+	}
+}
+
+func TestVIPSubnetFailures(t *testing.T) {
+	for _, test := range vipSubnetFailureTests {
+		filename := filepath.Join(testDataDir, test.in)
+		if _, err := ReadConfig(filename, ""); err == nil {
+			t.Errorf("ReadConfig successfully loaded protobuf file %s for %q, should have failed", test.in, test.desc)
 		}
 	}
 }
