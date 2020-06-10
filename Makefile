@@ -19,6 +19,7 @@ install-test-tools: all
 proto:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go
 	cd pb/config; protoc --go_out=paths=source_relative:. config.proto
+	cd pb/seesaw; protoc --go_out=paths=source_relative:. seesaw.proto
 
 test: all
 	go test ./...
