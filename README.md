@@ -33,8 +33,7 @@ Seesaw v2 is developed in Go and depends on several Go packages:
 - [github.com/miekg/dns](http://godoc.org/github.com/miekg/dns)
 
 Additionally, there is a compile and runtime dependency on
-[libnl](https://www.infradead.org/~tgr/libnl/) and a compile time dependency on
-the Go protobuf compiler.
+[libnl](https://www.infradead.org/~tgr/libnl/)
 
 On a Debian/Ubuntu style system, you should be able to prepare for building
 by running:
@@ -64,11 +63,9 @@ Ensure that `${GOPATH}/bin` is in your `${PATH}` and in the seesaw directory:
     make test
     make install
 
-If you wish to regenerate the protobuf code, the protobuf compiler and Go
-protobuf compiler generator are also needed:
+If you wish to regenerate the protobuf code, the protobuf compiler is needed:
 
     apt-get install protobuf-compiler
-    go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 
 The protobuf code can then be regenerated with:
 
