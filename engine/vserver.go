@@ -188,6 +188,8 @@ func (d *destination) ipvsDestination() *ipvs.Destination {
 		flags |= ipvs.DFForwardRoute
 	case seesaw.LBModeNAT:
 		flags |= ipvs.DFForwardMasq
+	case seesaw.LBModeTUN:
+		flags |= ipvs.DFForwardTunnel
 	}
 	return &ipvs.Destination{
 		Address:        d.ip.IP(),

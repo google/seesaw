@@ -16,5 +16,6 @@ vserver <
     protocol: TCP
     port: 443
     scheduler: MH
+    mode: TUN
   >
 >
