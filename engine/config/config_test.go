@@ -569,8 +569,32 @@ var vserverTests = []struct {
 						Healthchecks: make(map[string]*Healthcheck),
 					},
 				},
-				Backends:     make(map[string]*seesaw.Backend),
-				Healthchecks: make(map[string]*Healthcheck),
+				Backends: map[string]*seesaw.Backend{
+					"gateway1-1.example.com.": {
+						Host: seesaw.Host{
+							Hostname: "gateway1-1.example.com.",
+							IPv4Addr: net.ParseIP("192.168.36.2").To4(),
+							IPv4Mask: net.CIDRMask(26, 32),
+						},
+						Weight:    5,
+						Enabled:   true,
+						InService: true,
+					},
+				},
+				Healthchecks: map[string]*Healthcheck{
+					"HTTP/8001_0": {
+						Name:      "HTTP/8001_0",
+						Mode:      seesaw.HCModeTUN,
+						Type:      seesaw.HCTypeHTTP,
+						Port:      8001,
+						Interval:  time.Duration(10 * time.Second), // protobuf default
+						Timeout:   time.Duration(5 * time.Second),  // protobuf default
+						TLSVerify: false,
+						Send:      "/healthz",
+						Receive:   "Ok",
+						Code:      200,
+					},
+				},
 				VIPs: map[string]*seesaw.VIP{
 					"192.168.36.1 (Unicast)": {
 						IP:   seesaw.NewIP(net.ParseIP("192.168.36.1")),

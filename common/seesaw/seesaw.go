@@ -115,6 +115,7 @@ type HealthcheckMode int
 const (
 	HCModePlain HealthcheckMode = iota
 	HCModeDSR
+	HCModeTUN
 )
 
 // String returns the name for a given HealthcheckMode.
@@ -124,6 +125,8 @@ func (h HealthcheckMode) String() string {
 		return "PLAIN"
 	case HCModeDSR:
 		return "DSR"
+	case HCModeTUN:
+		return "TUN"
 	default:
 		return "(unknown)"
 	}
