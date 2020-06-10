@@ -535,6 +535,46 @@ var vserverTests = []struct {
 			},
 		},
 	},
+	{
+		"1 Vserver with Unicast address and Maglev scheduler",
+		"vservers2.pb",
+		map[string]*Vserver{
+			"api.gateway1@as-hkg": {
+				"api.gateway1@as-hkg",
+				seesaw.Host{
+					Hostname: "gateway1-vip1.example.com.",
+					IPv4Addr: net.ParseIP("192.168.36.1").To4(),
+					IPv4Mask: net.CIDRMask(26, 32),
+					IPv6Addr: net.ParseIP("2015:cafe:36::a800:1ff:ffee:dd01"),
+					IPv6Mask: net.CIDRMask(64, 128),
+				},
+				map[string]*VserverEntry{
+					"443/TCP": {
+						Port:         443,
+						Proto:        seesaw.IPProtoTCP,
+						Scheduler:    seesaw.LBSchedulerMH,
+						Mode:         seesaw.LBModeDSR, // protobuf default
+						Healthchecks: make(map[string]*Healthcheck),
+					},
+				},
+				make(map[string]*seesaw.Backend),
+				make(map[string]*Healthcheck),
+				map[string]*seesaw.VIP{
+					"192.168.36.1 (Unicast)": {
+						seesaw.NewIP(net.ParseIP("192.168.36.1")),
+						seesaw.UnicastVIP,
+					},
+					"2015:cafe:36:0:a800:1ff:ffee:dd01 (Unicast)": {
+						seesaw.NewIP(net.ParseIP("2015:cafe:36::a800:1ff:ffee:dd01")),
+						seesaw.UnicastVIP,
+					},
+				},
+				true,
+				false,
+				nil,
+			},
+		},
+	},
 }
 
 func readHealthcheck(f string) (*pb.Healthcheck, error) {

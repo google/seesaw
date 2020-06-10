@@ -129,6 +129,17 @@ message VserverEntry {
     LC = 3;
     WLC = 4;
     SH = 5;
+    // NOTE: MH scheduler option is available after Kernel 4.18
+    //
+    // It is typically used without conntrack sync. Additional sysctl settings
+    // such as `net.ipv4.vs.sloppy_tcp` is required when operating in that mode
+    // to allow seamless failover.
+    //
+    // However, turning off conntrack sync could break other services on other
+    // scheduler settings.
+    //
+    // Ref: https://www.kernel.org/doc/Documentation/networking/ipvs-sysctl.txt
+    MH = 6;
   }
   optional Scheduler scheduler = 5 [default = WLC];
   enum Mode {

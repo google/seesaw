@@ -316,6 +316,7 @@ const (
 	LBSchedulerLC
 	LBSchedulerWLC
 	LBSchedulerSH
+	LBSchedulerMH
 )
 
 var schedulerNames = map[LBScheduler]string{
@@ -325,6 +326,7 @@ var schedulerNames = map[LBScheduler]string{
 	LBSchedulerLC:   "lc",
 	LBSchedulerWLC:  "wlc",
 	LBSchedulerSH:   "sh",
+	LBSchedulerMH:   "mh",
 }
 
 // String returns the string representation of a LBScheduler.

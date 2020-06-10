@@ -465,6 +465,8 @@ func addVservers(c *Cluster, p *pb.Cluster) error {
 				scheduler = seesaw.LBSchedulerWLC
 			case pb.VserverEntry_SH:
 				scheduler = seesaw.LBSchedulerSH
+			case pb.VserverEntry_MH:
+				scheduler = seesaw.LBSchedulerMH
 			default:
 				// TODO(angusc): Consider this VServer broken.
 				log.Errorf("%v: Unsupported scheduler %v", vs.GetName(), ve.GetScheduler())
