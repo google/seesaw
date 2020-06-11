@@ -17,6 +17,16 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get install libnl-3-dev libnl-genl-3-dev
+        PROTOC_VER=3.7.1
+        PROTOC_ZIP=protoc-${PROTOC_VER}-linux-x86_64.zip
+        curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/${PROTOC_ZIP}
+        sudo unzip ${PROTOC_ZIP} -d /usr/local
+        rm ${PROTOC_ZIP}
+    - name: Protobuf
+      run: |
+        make proto
+        git status --porcelain
+        git diff --exit-code
     - name: Build
       run: |
         go build ./...

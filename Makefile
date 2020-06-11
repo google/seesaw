@@ -17,7 +17,9 @@ install-test-tools: all
 	go install github.com/google/seesaw/test_tools/quagga_test_tool
 
 proto:
-	protoc --go_out=. pb/config/config.proto
+	go install google.golang.org/protobuf/cmd/protoc-gen-go
+	cd pb/config; protoc --go_out=paths=source_relative:. config.proto
+	cd pb/seesaw; protoc --go_out=paths=source_relative:. seesaw.proto
 
 test: all
 	go test ./...
