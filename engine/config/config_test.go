@@ -322,13 +322,13 @@ var vserverTests = []struct {
 		"vservers1.pb",
 		map[string]*Vserver{
 			"dns.resolver.anycast@au-syd": {
-				"dns.resolver.anycast@au-syd",
-				seesaw.Host{
+				Name: "dns.resolver.anycast@au-syd",
+				Host: seesaw.Host{
 					Hostname: "dns-anycast.example.com.",
 					IPv4Addr: net.ParseIP("192.168.255.1").To4(),
 					IPv4Mask: net.CIDRMask(24, 32),
 				},
-				map[string]*VserverEntry{
+				Entries: map[string]*VserverEntry{
 					"53/UDP": {
 						Port:          53,
 						Proto:         seesaw.IPProtoUDP,
@@ -362,7 +362,7 @@ var vserverTests = []struct {
 						Healthchecks: make(map[string]*Healthcheck),
 					},
 				},
-				map[string]*seesaw.Backend{
+				Backends: map[string]*seesaw.Backend{
 					"dns1-1.example.com.": {
 						Host: seesaw.Host{
 							Hostname: "dns1-1.example.com.",
@@ -384,7 +384,7 @@ var vserverTests = []struct {
 						InService: true,
 					},
 				},
-				map[string]*Healthcheck{
+				Healthchecks: map[string]*Healthcheck{
 					"HTTP/16767_0": {
 						Name:      "HTTP/16767_0",
 						Mode:      seesaw.HCModeDSR,
@@ -398,26 +398,27 @@ var vserverTests = []struct {
 						Code:      200,
 					},
 				},
-				map[string]*seesaw.VIP{
+				VIPs: map[string]*seesaw.VIP{
 					"192.168.255.1 (Anycast)": {
 						seesaw.NewIP(net.ParseIP("192.168.255.1")),
 						seesaw.AnycastVIP,
 					},
 				},
-				true,
-				false,
-				nil,
+				AccessGrants: map[string]*AccessGrant{},
+				Enabled:      true,
+				UseFWM:       false,
+				Warnings:     nil,
 			},
 			"dns.resolver@au-syd": {
-				"dns.resolver@au-syd",
-				seesaw.Host{
+				Name: "dns.resolver@au-syd",
+				Host: seesaw.Host{
 					Hostname: "dns-vip1.example.com.",
 					IPv4Addr: net.ParseIP("192.168.36.1").To4(),
 					IPv4Mask: net.CIDRMask(26, 32),
 					IPv6Addr: net.ParseIP("2015:cafe:36::a800:1ff:ffee:dd01"),
 					IPv6Mask: net.CIDRMask(64, 128),
 				},
-				map[string]*VserverEntry{
+				Entries: map[string]*VserverEntry{
 					"53/UDP": {
 						Port:         53,
 						Proto:        seesaw.IPProtoUDP,
@@ -433,9 +434,9 @@ var vserverTests = []struct {
 						Healthchecks: make(map[string]*Healthcheck),
 					},
 				},
-				make(map[string]*seesaw.Backend),
-				make(map[string]*Healthcheck),
-				map[string]*seesaw.VIP{
+				Backends:     make(map[string]*seesaw.Backend),
+				Healthchecks: make(map[string]*Healthcheck),
+				VIPs: map[string]*seesaw.VIP{
 					"192.168.36.1 (Dedicated)": {
 						seesaw.NewIP(net.ParseIP("192.168.36.1")),
 						seesaw.DedicatedVIP,
@@ -445,18 +446,19 @@ var vserverTests = []struct {
 						seesaw.DedicatedVIP,
 					},
 				},
-				true,
-				false,
-				nil,
+				AccessGrants: map[string]*AccessGrant{},
+				Enabled:      true,
+				UseFWM:       false,
+				Warnings:     nil,
 			},
 			"irc.server@au-syd": {
-				"irc.server@au-syd",
-				seesaw.Host{
+				Name: "irc.server@au-syd",
+				Host: seesaw.Host{
 					Hostname: "irc-anycast.example.com.",
 					IPv4Addr: net.ParseIP("192.168.255.2").To4(),
 					IPv4Mask: net.CIDRMask(24, 32),
 				},
-				map[string]*VserverEntry{
+				Entries: map[string]*VserverEntry{
 					"80/TCP": {
 						Port:         80,
 						Proto:        seesaw.IPProtoTCP,
@@ -492,7 +494,7 @@ var vserverTests = []struct {
 						},
 					},
 				},
-				map[string]*seesaw.Backend{
+				Backends: map[string]*seesaw.Backend{
 					"irc1-1.example.com.": {
 						Host: seesaw.Host{
 							Hostname: "irc1-1.example.com.",
@@ -506,7 +508,7 @@ var vserverTests = []struct {
 						InService: true,
 					},
 				},
-				map[string]*Healthcheck{
+				Healthchecks: map[string]*Healthcheck{
 					"TCP/6667_0": {
 						Name:      "TCP/6667_0",
 						Mode:      seesaw.HCModePlain,
@@ -520,15 +522,16 @@ var vserverTests = []struct {
 						Retries:   2,
 					},
 				},
-				map[string]*seesaw.VIP{
+				VIPs: map[string]*seesaw.VIP{
 					"192.168.255.2 (Anycast)": {
 						seesaw.NewIP(net.ParseIP("192.168.255.2")),
 						seesaw.AnycastVIP,
 					},
 				},
-				true,
-				false,
-				nil,
+				AccessGrants: map[string]*AccessGrant{},
+				Enabled:      true,
+				UseFWM:       false,
+				Warnings:     nil,
 			},
 		},
 	},
@@ -537,15 +540,15 @@ var vserverTests = []struct {
 		"vservers2.pb",
 		map[string]*Vserver{
 			"api.gateway1@as-hkg": {
-				"api.gateway1@as-hkg",
-				seesaw.Host{
+				Name: "api.gateway1@as-hkg",
+				Host: seesaw.Host{
 					Hostname: "gateway1-vip1.example.com.",
 					IPv4Addr: net.ParseIP("192.168.36.1").To4(),
 					IPv4Mask: net.CIDRMask(26, 32),
 					IPv6Addr: net.ParseIP("2015:cafe:36::a800:1ff:ffee:dd01"),
 					IPv6Mask: net.CIDRMask(64, 128),
 				},
-				map[string]*VserverEntry{
+				Entries: map[string]*VserverEntry{
 					"443/TCP": {
 						Port:         443,
 						Proto:        seesaw.IPProtoTCP,
@@ -554,9 +557,9 @@ var vserverTests = []struct {
 						Healthchecks: make(map[string]*Healthcheck),
 					},
 				},
-				make(map[string]*seesaw.Backend),
-				make(map[string]*Healthcheck),
-				map[string]*seesaw.VIP{
+				Backends:     make(map[string]*seesaw.Backend),
+				Healthchecks: make(map[string]*Healthcheck),
+				VIPs: map[string]*seesaw.VIP{
 					"192.168.36.1 (Unicast)": {
 						seesaw.NewIP(net.ParseIP("192.168.36.1")),
 						seesaw.UnicastVIP,
@@ -566,9 +569,10 @@ var vserverTests = []struct {
 						seesaw.UnicastVIP,
 					},
 				},
-				true,
-				false,
-				nil,
+				AccessGrants: map[string]*AccessGrant{},
+				Enabled:      true,
+				UseFWM:       false,
+				Warnings:     nil,
 			},
 		},
 	},
