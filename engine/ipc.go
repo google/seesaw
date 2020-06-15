@@ -49,6 +49,24 @@ type SeesawEngine struct {
 	engine *Engine
 }
 
+// accessCheck performs an access check based on the given context and vserver.
+func (s *SeesawEngine) accessCheck(ctx *ipc.Context, vserver string) (string, error) {
+	switch {
+	case ctx.IsTrusted():
+		return "trusted", nil
+	case ctx.User.IsAdmin():
+		return "administrator", nil
+	case ctx.User.IsOperator():
+		hasAccess, reason := s.engine.vserverAccess.hasAccess(vserver, ctx.User.Username)
+		if !hasAccess {
+			return "", fmt.Errorf("%v: user %q is not authorized to control %q", errAccess, ctx.User.Username, vserver)
+		}
+		return reason, nil
+	default:
+		return "", errAccess
+	}
+}
+
 func (s *SeesawEngine) trace(call string, ctx *ipc.Context) {
 	log.V(2).Infof("SeesawEngine.%s called by %v", call, ctx)
 }
@@ -60,7 +78,7 @@ func (s *SeesawEngine) Failover(ctx *ipc.Context, reply *int) error {
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanWrite() {
 		return errAccess
 	}
 
@@ -141,7 +159,7 @@ func (s *SeesawEngine) HAStatus(ctx *ipc.Context, status *seesaw.HAStatus) error
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanRead() {
 		return errAccess
 	}
 
@@ -202,7 +220,7 @@ func (s *SeesawEngine) ClusterStatus(ctx *ipc.Context, reply *seesaw.ClusterStat
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanRead() {
 		return errAccess
 	}
 
@@ -230,7 +248,7 @@ func (s *SeesawEngine) ConfigStatus(ctx *ipc.Context, reply *seesaw.ConfigStatus
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanRead() {
 		return errAccess
 	}
 
@@ -263,7 +281,7 @@ func (s *SeesawEngine) ConfigReload(ctx *ipc.Context, reply *int) error {
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanWrite() {
 		return errAccess
 	}
 
@@ -282,7 +300,7 @@ func (s *SeesawEngine) ConfigSource(args *ipc.ConfigSource, oldSource *string) e
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanWrite() {
 		return errAccess
 	}
 
@@ -308,7 +326,7 @@ func (s *SeesawEngine) BGPNeighbors(ctx *ipc.Context, reply *quagga.Neighbors) e
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanRead() {
 		return errAccess
 	}
 
@@ -328,7 +346,7 @@ func (s *SeesawEngine) VLANs(ctx *ipc.Context, reply *seesaw.VLANs) error {
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanRead() {
 		return errAccess
 	}
 
@@ -351,7 +369,7 @@ func (s *SeesawEngine) Vservers(ctx *ipc.Context, reply *seesaw.VserverMap) erro
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanRead() {
 		return errAccess
 	}
 
@@ -396,7 +414,7 @@ func (s *SeesawEngine) OverrideBackend(args *ipc.Override, reply *int) error {
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanWrite() {
 		return errAccess
 	}
 
@@ -418,7 +436,7 @@ func (s *SeesawEngine) OverrideDestination(args *ipc.Override, reply *int) error
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.CanWrite() {
 		return errAccess
 	}
 
@@ -440,14 +458,23 @@ func (s *SeesawEngine) OverrideVserver(args *ipc.Override, reply *int) error {
 		return errContext
 	}
 
-	if !ctx.IsTrusted() {
+	if !ctx.IsAuthenticated() && !ctx.IsTrusted() {
 		return errAccess
 	}
 
-	if args.Vserver == nil {
-		return errors.New("vserver is nil")
+	override := args.Vserver
+	if override == nil {
+		return errors.New("override vserver is nil")
 	}
-	s.engine.queueOverride(args.Vserver)
+
+	reason, err := s.accessCheck(ctx, override.VserverName)
+	if err != nil {
+		log.Warningf("Vserver override on %q denied for %v: %v", override.VserverName, ctx, err)
+		return err
+	}
+
+	log.Infof("Vserver override for %q requested by %v (%s)", override.VserverName, ctx, reason)
+	s.engine.queueOverride(override)
 	return nil
 }
 

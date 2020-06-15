@@ -27,14 +27,35 @@ import (
 	"github.com/google/seesaw/common/ipc"
 )
 
-// authInit initialises the authentication system.
-func (e *ECU) authInit() error {
+// Authenticator types provide functionality for authenticating users and adding
+// the authenticated information to a context.
+type Authenticator interface {
+	// AuthInit will be called once when the ECU is run to set up required
+	// resources for authentication. If nothing is needed, it should simply
+	// return nil. If an error is returned, a warning will be
+	// logged but the ECU will continue to run, so implementations should ensure
+	// Authenticate does not crash if AuthInit fails.
+	AuthInit() error
+
+	// Authenticate inspects the provided context (particularly ctx.AuthToken)
+	// and either returns an error or creates a child context treated as
+	// authenticated (ctx.AuthType == ipc.ATSSO) and fields needed for
+	// authorization checks (ctx.User).
+	Authenticate(ctx *ipc.Context) (*ipc.Context, error)
+}
+
+// DefaultAuthenticator implements a "default-deny authenticator" that denies
+// all authentications. Using this prevents remote connections to the ECU.
+type DefaultAuthenticator struct{}
+
+// AuthInit does nothing and returns nil.
+func (DefaultAuthenticator) AuthInit() error {
 	return nil
 }
 
-// authenticate attempts to validate the given authentication token.
-func (e *ECU) authenticate(ctx *ipc.Context) (*ipc.Context, error) {
-	return nil, errors.New("unimplemented")
+// Authenticate returns a "default deny" error.
+func (DefaultAuthenticator) Authenticate(ctx *ipc.Context) (*ipc.Context, error) {
+	return nil, errors.New("default deny")
 }
 
 // authConnect attempts to authenticate the user using the given context. If
@@ -44,7 +65,7 @@ func (e *ECU) authConnect(ctx *ipc.Context) (*conn.Seesaw, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
 	}
-	authCtx, err := e.authenticate(ctx)
+	authCtx, err := e.cfg.Authenticator.Authenticate(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("authentication failed: %v", err)
 	}

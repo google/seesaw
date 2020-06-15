@@ -27,6 +27,27 @@ import (
 	"github.com/google/seesaw/common/seesaw"
 )
 
+// AccessGrant specifies an access grant for a user or group.
+type AccessGrant struct {
+	Grantee string
+	IsGroup bool
+}
+
+// Key returns the unique identifier for an AccessGroup.
+func (a *AccessGrant) Key() string {
+	prefix := "user"
+	if a.IsGroup {
+		prefix = "group"
+	}
+	return fmt.Sprintf("%s:%s", prefix, a.Grantee)
+}
+
+// AccessGroup provides group membership information for an access grant.
+type AccessGroup struct {
+	Name    string
+	Members []string
+}
+
 // Cluster represents the configuration for a load balancing cluster.
 type Cluster struct {
 	Site         string
@@ -39,6 +60,7 @@ type Cluster struct {
 	VLANs        map[uint16]*seesaw.VLAN // by VLAN.Key()
 	Vservers     map[string]*Vserver     // by Vserver.Key()
 	Status       seesaw.ConfigStatus
+	AccessGroups map[string]*AccessGroup // by name
 }
 
 // NewCluster returns an initialised Cluster structure.
@@ -54,7 +76,18 @@ func NewCluster(site string) *Cluster {
 			Warnings:   make([]string, 0),
 			Attributes: make([]seesaw.ConfigMetadata, 0),
 		},
+		AccessGroups: make(map[string]*AccessGroup),
 	}
+}
+
+// AddAccessGroup adds an access group to a Seesaw Cluster.
+func (c *Cluster) AddAccessGroup(group *AccessGroup) error {
+	key := group.Name
+	if _, ok := c.AccessGroups[key]; ok {
+		return fmt.Errorf("Cluster %q already contains access group %q", c.Site, key)
+	}
+	c.AccessGroups[key] = group
+	return nil
 }
 
 // AddBGPPeer adds a BGP peer to a Seesaw Cluster.
@@ -120,6 +153,7 @@ type Vserver struct {
 	Backends     map[string]*seesaw.Backend // by Backend.Key()
 	Healthchecks map[string]*Healthcheck    // by Healthcheck.Key()
 	VIPs         map[string]*seesaw.VIP     // by VIP.IP.String()
+	AccessGrants map[string]*AccessGrant    // by AccessGrant.Key()
 	Enabled      bool
 	UseFWM       bool
 	Warnings     []string
@@ -135,6 +169,7 @@ func NewVserver(name string, host seesaw.Host) *Vserver {
 		Backends:     make(map[string]*seesaw.Backend),
 		Healthchecks: make(map[string]*Healthcheck),
 		VIPs:         make(map[string]*seesaw.VIP),
+		AccessGrants: make(map[string]*AccessGrant),
 		Warnings:     make([]string, 0),
 	}
 }
@@ -142,6 +177,16 @@ func NewVserver(name string, host seesaw.Host) *Vserver {
 // Key returns the unique identifier for a Vserver.
 func (v *Vserver) Key() string {
 	return v.Name
+}
+
+// AddAccessGrant adds an AccessGrant to a Vserver.
+func (v *Vserver) AddAccessGrant(a *AccessGrant) error {
+	key := a.Key()
+	if _, ok := v.AccessGrants[key]; ok {
+		return fmt.Errorf("Vserver %q already has AccessGrant %q", v.Name, key)
+	}
+	v.AccessGrants[key] = a
+	return nil
 }
 
 // AddVserverEntry adds an VserverEntry to a Vserver.
