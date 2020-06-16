@@ -51,6 +51,7 @@ type SyncSessionID uint64
 // SyncNoteType specifies the type of a synchronisation notification.
 type SyncNoteType int
 
+// Values for SyncNoteType.
 const (
 	SNTHeartbeat SyncNoteType = iota
 	SNTDesync
@@ -417,10 +418,7 @@ func (sc *syncClient) failover() error {
 		return err
 	}
 	defer sc.close()
-	if err := sc.client.Call("SeesawSync.Failover", 0, nil); err != nil {
-		return err
-	}
-	return nil
+	return sc.client.Call("SeesawSync.Failover", 0, nil)
 }
 
 // runOnce establishes a connection to the synchronisation server, registers

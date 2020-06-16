@@ -103,11 +103,7 @@ func (h *haManager) requestFailover(peer bool) error {
 		return fmt.Errorf("Node is not master (current state is %v)", state)
 	}
 
-	if err := h.engine.syncClient.failover(); err != nil {
-		return err
-	}
-
-	return nil
+	return h.engine.syncClient.failover()
 }
 
 // setState sets the HAState of the engine and dispatches events when the state

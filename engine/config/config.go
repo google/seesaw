@@ -45,6 +45,7 @@ var defaultArchiveConfig = archiveConfig{
 // Source specifies a source of configuration information.
 type Source int
 
+// Values for Source.
 const (
 	SourceNone Source = iota
 	SourceDisk
@@ -339,13 +340,13 @@ func addNodes(c *Cluster, p *pb.Cluster) error {
 	for _, n := range c.Nodes {
 		nodes = append(nodes, n)
 	}
-	sort.Sort(seesaw.NodesByIPv4{nodes})
+	sort.Sort(seesaw.NodesByIPv4{Nodes: nodes})
 	for i, n := range nodes {
 		if i == 0 {
 			n.Priority = 255
 			continue
 		}
-		n.Priority = uint8(len(nodes)-i)
+		n.Priority = uint8(len(nodes) - i)
 	}
 	return nil
 }
