@@ -345,7 +345,7 @@ func addNodes(c *Cluster, p *pb.Cluster) error {
 			n.Priority = 255
 			continue
 		}
-		n.Priority = len(nodes)-i
+		n.Priority = uint8(len(nodes)-i)
 	}
 	return nil
 }
