@@ -400,8 +400,8 @@ var vserverTests = []struct {
 				},
 				map[string]*seesaw.VIP{
 					"192.168.255.1 (Anycast)": {
-						seesaw.NewIP(net.ParseIP("192.168.255.1")),
-						seesaw.AnycastVIP,
+						IP:   seesaw.NewIP(net.ParseIP("192.168.255.1")),
+						Type: seesaw.AnycastVIP,
 					},
 				},
 				true,
@@ -437,12 +437,12 @@ var vserverTests = []struct {
 				make(map[string]*Healthcheck),
 				map[string]*seesaw.VIP{
 					"192.168.36.1 (Dedicated)": {
-						seesaw.NewIP(net.ParseIP("192.168.36.1")),
-						seesaw.DedicatedVIP,
+						IP:   seesaw.NewIP(net.ParseIP("192.168.36.1")),
+						Type: seesaw.DedicatedVIP,
 					},
 					"2015:cafe:36:0:a800:1ff:ffee:dd01 (Dedicated)": {
-						seesaw.NewIP(net.ParseIP("2015:cafe:36::a800:1ff:ffee:dd01")),
-						seesaw.DedicatedVIP,
+						IP:   seesaw.NewIP(net.ParseIP("2015:cafe:36::a800:1ff:ffee:dd01")),
+						Type: seesaw.DedicatedVIP,
 					},
 				},
 				true,
@@ -522,8 +522,8 @@ var vserverTests = []struct {
 				},
 				map[string]*seesaw.VIP{
 					"192.168.255.2 (Anycast)": {
-						seesaw.NewIP(net.ParseIP("192.168.255.2")),
-						seesaw.AnycastVIP,
+						IP:   seesaw.NewIP(net.ParseIP("192.168.255.2")),
+						Type: seesaw.AnycastVIP,
 					},
 				},
 				true,
@@ -558,12 +558,12 @@ var vserverTests = []struct {
 				make(map[string]*Healthcheck),
 				map[string]*seesaw.VIP{
 					"192.168.36.1 (Unicast)": {
-						seesaw.NewIP(net.ParseIP("192.168.36.1")),
-						seesaw.UnicastVIP,
+						IP:   seesaw.NewIP(net.ParseIP("192.168.36.1")),
+						Type: seesaw.UnicastVIP,
 					},
 					"2015:cafe:36:0:a800:1ff:ffee:dd01 (Unicast)": {
-						seesaw.NewIP(net.ParseIP("2015:cafe:36::a800:1ff:ffee:dd01")),
-						seesaw.UnicastVIP,
+						IP:   seesaw.NewIP(net.ParseIP("2015:cafe:36::a800:1ff:ffee:dd01")),
+						Type: seesaw.UnicastVIP,
 					},
 				},
 				true,

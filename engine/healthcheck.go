@@ -383,7 +383,7 @@ func (h *healthcheckManager) expire() {
 
 	status := healthcheck.Status{State: healthcheck.StateUnknown}
 	for _, id := range ids {
-		h.queueHealthState(&healthcheck.Notification{id, status})
+		h.queueHealthState(&healthcheck.Notification{Id: id, Status: status})
 	}
 }
 
