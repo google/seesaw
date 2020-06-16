@@ -418,6 +418,7 @@ type ServerConfig struct {
 	EngineSocket   string
 	MaxFailures    int
 	NotifyInterval time.Duration
+	FetchInterval  time.Duration
 	RetryDelay     time.Duration
 	DryRun         bool
 }
@@ -429,6 +430,7 @@ var defaultServerConfig = ServerConfig{
 	EngineSocket:   seesaw.EngineSocket,
 	MaxFailures:    10,
 	NotifyInterval: 15 * time.Second,
+	FetchInterval:  15 * time.Second,
 	RetryDelay:     2 * time.Second,
 }
 
@@ -517,7 +519,7 @@ func (s *Server) updater() {
 		} else {
 			log.Infof("Engine returned %d healthchecks", len(checks.Configs))
 			s.configs <- checks.Configs
-			time.Sleep(15 * time.Second)
+			time.Sleep(s.config.FetchInterval)
 		}
 	}
 }
