@@ -117,7 +117,7 @@ var expectedServices = map[serviceKey]struct {
 	ip            seesaw.IP
 	expectedDests []destination
 }{
-	serviceKey{
+	{
 		af:    seesaw.IPv4,
 		proto: seesaw.IPProtoUDP,
 		port:  53,
@@ -128,7 +128,7 @@ var expectedServices = map[serviceKey]struct {
 			{destinationKey: newDestinationKey(net.ParseIP("1.1.1.11")), stats: &seesaw.DestinationStats{}},
 		},
 	},
-	serviceKey{
+	{
 		af:    seesaw.IPv4,
 		proto: seesaw.IPProtoTCP,
 		port:  8053,
@@ -139,7 +139,7 @@ var expectedServices = map[serviceKey]struct {
 			{destinationKey: newDestinationKey(net.ParseIP("1.1.1.11")), stats: &seesaw.DestinationStats{}},
 		},
 	},
-	serviceKey{
+	{
 		af:    seesaw.IPv6,
 		proto: seesaw.IPProtoUDP,
 		port:  53,
@@ -150,7 +150,7 @@ var expectedServices = map[serviceKey]struct {
 			{destinationKey: newDestinationKey(net.ParseIP("2012::11")), stats: &seesaw.DestinationStats{}},
 		},
 	},
-	serviceKey{
+	{
 		af:    seesaw.IPv6,
 		proto: seesaw.IPProtoTCP,
 		port:  8053,
@@ -167,7 +167,7 @@ var expectedFWMServices = map[serviceKey]struct {
 	ip            seesaw.IP
 	expectedDests []destination
 }{
-	serviceKey{
+	{
 		af:  seesaw.IPv4,
 		fwm: fwmAllocBase + 0,
 	}: {
@@ -177,7 +177,7 @@ var expectedFWMServices = map[serviceKey]struct {
 			{destinationKey: newDestinationKey(net.ParseIP("1.1.1.11")), stats: &seesaw.DestinationStats{}},
 		},
 	},
-	serviceKey{
+	{
 		af:  seesaw.IPv6,
 		fwm: fwmAllocBase + 1,
 	}: {
@@ -314,69 +314,69 @@ var expectedServiceStates = map[serviceKey]struct {
 	testStates
 	dests map[destinationKey]testStates
 }{
-	serviceKey{seesaw.IPv4, 0, seesaw.IPProtoUDP, 53}: {
+	{seesaw.IPv4, 0, seesaw.IPProtoUDP, 53}: {
 		seesaw.ParseIP("192.168.255.1"),
 		testStates{
 			active:  []bool{false, false, true, true, false, false, false},
 			healthy: []bool{false, false, true, true, false, false, false},
 		},
 		map[destinationKey]testStates{
-			destinationKey{seesaw.ParseIP("1.1.1.10")}: {
+			{seesaw.ParseIP("1.1.1.10")}: {
 				active:  []bool{false, false, true, false, false, false, false},
 				healthy: []bool{false, false, true, false, false, false, false},
 			},
-			destinationKey{seesaw.ParseIP("1.1.1.11")}: {
+			{seesaw.ParseIP("1.1.1.11")}: {
 				active:  []bool{false, false, true, true, false, false, false},
 				healthy: []bool{false, false, true, true, false, false, false},
 			},
 		},
 	},
-	serviceKey{seesaw.IPv4, 0, seesaw.IPProtoTCP, 8053}: {
+	{seesaw.IPv4, 0, seesaw.IPProtoTCP, 8053}: {
 		seesaw.ParseIP("192.168.255.1"),
 		testStates{
 			active:  []bool{false, false, true, true, false, false, false},
 			healthy: []bool{false, false, true, true, true, true, false},
 		},
 		map[destinationKey]testStates{
-			destinationKey{seesaw.ParseIP("1.1.1.10")}: {
+			{seesaw.ParseIP("1.1.1.10")}: {
 				active:  []bool{false, false, true, true, false, false, false},
 				healthy: []bool{false, false, true, true, true, true, false},
 			},
-			destinationKey{seesaw.ParseIP("1.1.1.11")}: {
+			{seesaw.ParseIP("1.1.1.11")}: {
 				active:  []bool{false, false, true, true, false, false, false},
 				healthy: []bool{false, false, true, true, true, true, false},
 			},
 		},
 	},
-	serviceKey{seesaw.IPv6, 0, seesaw.IPProtoUDP, 53}: {
+	{seesaw.IPv6, 0, seesaw.IPProtoUDP, 53}: {
 		seesaw.ParseIP("2012::1"),
 		testStates{
 			active:  []bool{false, false, true, true, true, false, false},
 			healthy: []bool{false, false, true, true, true, false, false},
 		},
 		map[destinationKey]testStates{
-			destinationKey{seesaw.ParseIP("2012::10")}: {
+			{seesaw.ParseIP("2012::10")}: {
 				active:  []bool{false, false, true, true, true, false, false},
 				healthy: []bool{false, false, true, true, true, false, false},
 			},
-			destinationKey{seesaw.ParseIP("2012::11")}: {
+			{seesaw.ParseIP("2012::11")}: {
 				active:  []bool{false, false, true, true, true, false, false},
 				healthy: []bool{false, false, true, true, true, false, false},
 			},
 		},
 	},
-	serviceKey{seesaw.IPv6, 0, seesaw.IPProtoTCP, 8053}: {
+	{seesaw.IPv6, 0, seesaw.IPProtoTCP, 8053}: {
 		seesaw.ParseIP("2012::1"),
 		testStates{
 			active:  []bool{false, false, true, true, true, true, false},
 			healthy: []bool{false, false, true, true, true, true, false},
 		},
 		map[destinationKey]testStates{
-			destinationKey{seesaw.ParseIP("2012::10")}: {
+			{seesaw.ParseIP("2012::10")}: {
 				active:  []bool{false, false, true, true, true, true, false},
 				healthy: []bool{false, false, true, true, true, true, false},
 			},
-			destinationKey{seesaw.ParseIP("2012::11")}: {
+			{seesaw.ParseIP("2012::11")}: {
 				active:  []bool{false, false, true, true, true, true, false},
 				healthy: []bool{false, false, true, true, true, true, false},
 			},
@@ -706,7 +706,10 @@ func TestVserverOverride(t *testing.T) {
 
 	// Disable the vserver with an Override.
 	var o seesaw.Override
-	o = &seesaw.VserverOverride{vserverConfig.Name, seesaw.OverrideDisable}
+	o = &seesaw.VserverOverride{
+		VserverName:   vserverConfig.Name,
+		OverrideState: seesaw.OverrideDisable,
+	}
 	vserver.handleOverride(o)
 
 	// The vserver should still have the same number of services.
@@ -731,7 +734,10 @@ func TestVserverOverride(t *testing.T) {
 	}
 
 	// Bring it back.
-	o = &seesaw.VserverOverride{vserverConfig.Name, seesaw.OverrideDefault}
+	o = &seesaw.VserverOverride{
+		VserverName:   vserverConfig.Name,
+		OverrideState: seesaw.OverrideDefault,
+	}
 	vserver.handleOverride(o)
 	for _, c := range vserver.checks {
 		n := &checkNotification{key: c.key, status: statusHealthy}
@@ -758,7 +764,10 @@ func TestVserverOverride(t *testing.T) {
 	}
 
 	// Enable the vserver with an Override.
-	o = &seesaw.VserverOverride{vserverConfig.Name, seesaw.OverrideEnable}
+	o = &seesaw.VserverOverride{
+		VserverName:   vserverConfig.Name,
+		OverrideState: seesaw.OverrideEnable,
+	}
 	vserver.handleOverride(o)
 	for _, c := range vserver.checks {
 		n := &checkNotification{key: c.key, status: statusHealthy}
@@ -780,7 +789,10 @@ func TestVserverOverride(t *testing.T) {
 	}
 
 	// Remove the enable override, nothing should change.
-	o = &seesaw.VserverOverride{vserverConfig.Name, seesaw.OverrideDefault}
+	o = &seesaw.VserverOverride{
+		VserverName:   vserverConfig.Name,
+		OverrideState: seesaw.OverrideDefault,
+	}
 	vserver.handleOverride(o)
 	for _, err := range checkAllUp(vserver) {
 		t.Error(err)

@@ -108,31 +108,31 @@ type service struct {
 }
 
 // ipvsService returns an IPVS Service for the given service.
-func (svc *service) ipvsService() *ipvs.Service {
+func (s *service) ipvsService() *ipvs.Service {
 	var flags ipvs.ServiceFlags
-	if svc.ventry.Persistence > 0 {
+	if s.ventry.Persistence > 0 {
 		flags |= ipvs.SFPersistent
 	}
-	if svc.ventry.OnePacket {
+	if s.ventry.OnePacket {
 		flags |= ipvs.SFOnePacket
 	}
 	var ip net.IP
 	switch {
-	case svc.fwm > 0 && svc.af == seesaw.IPv4:
+	case s.fwm > 0 && s.af == seesaw.IPv4:
 		ip = net.IPv4zero
-	case svc.fwm > 0 && svc.af == seesaw.IPv6:
+	case s.fwm > 0 && s.af == seesaw.IPv6:
 		ip = net.IPv6zero
 	default:
-		ip = svc.ip.IP()
+		ip = s.ip.IP()
 	}
 	return &ipvs.Service{
 		Address:      ip,
-		Protocol:     ipvs.IPProto(svc.proto),
-		Port:         svc.port,
-		Scheduler:    svc.ventry.Scheduler.String(),
-		FirewallMark: svc.fwm,
+		Protocol:     ipvs.IPProto(s.proto),
+		Port:         s.port,
+		Scheduler:    s.ventry.Scheduler.String(),
+		FirewallMark: s.fwm,
 		Flags:        flags,
-		Timeout:      uint32(svc.ventry.Persistence),
+		Timeout:      uint32(s.ventry.Persistence),
 	}
 }
 
@@ -179,11 +179,11 @@ type destination struct {
 }
 
 // ipvsDestination returns an IPVS Destination for the given destination.
-func (dst *destination) ipvsDestination() *ipvs.Destination {
+func (d *destination) ipvsDestination() *ipvs.Destination {
 	var flags ipvs.DestinationFlags
-	switch dst.service.ventry.Mode {
+	switch d.service.ventry.Mode {
 	case seesaw.LBModeNone:
-		log.Warningf("%v: Unspecified LB mode", dst)
+		log.Warningf("%v: Unspecified LB mode", d)
 	case seesaw.LBModeDSR:
 		flags |= ipvs.DFForwardRoute
 	case seesaw.LBModeNAT:
@@ -192,12 +192,12 @@ func (dst *destination) ipvsDestination() *ipvs.Destination {
 		flags |= ipvs.DFForwardTunnel
 	}
 	return &ipvs.Destination{
-		Address:        dst.ip.IP(),
-		Port:           dst.service.port,
-		Weight:         dst.weight,
+		Address:        d.ip.IP(),
+		Port:           d.service.port,
+		Weight:         d.weight,
 		Flags:          flags,
-		LowerThreshold: uint32(dst.service.ventry.LThreshold),
-		UpperThreshold: uint32(dst.service.ventry.UThreshold),
+		LowerThreshold: uint32(d.service.ventry.LThreshold),
+		UpperThreshold: uint32(d.service.ventry.UThreshold),
 	}
 }
 
