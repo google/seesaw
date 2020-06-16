@@ -341,14 +341,11 @@ func addNodes(c *Cluster, p *pb.Cluster) error {
 	}
 	sort.Sort(seesaw.NodesByIPv4{nodes})
 	for i, n := range nodes {
-		switch i {
-		case 0:
+		if i == 0 {
 			n.Priority = 255
-		case 1:
-			n.Priority = 1
-		default:
-			break
+			continue
 		}
+		n.Priority = len(nodes)-i
 	}
 	return nil
 }
