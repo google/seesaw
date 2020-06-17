@@ -24,22 +24,12 @@ import (
 	"time"
 )
 
-func newLocalTCPListener(n string) (*net.TCPListener, *net.TCPAddr, error) {
-	var addr string
-	switch n {
-	case "tcp4":
-		addr = "127.0.0.1:0"
-	case "tcp6":
-		addr = "[::1]:0"
-	default:
-		return nil, nil, fmt.Errorf("unknown network %q", n)
-	}
-
-	tcpAddr, err := net.ResolveTCPAddr(n, addr)
+func newLocalTCPListener() (*net.TCPListener, *net.TCPAddr, error) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
 		return nil, nil, err
 	}
-	l, err := net.ListenTCP(n, tcpAddr)
+	l, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -71,11 +61,10 @@ func (tsd *testNoteDispatcher) nextNote() (*SyncNote, error) {
 	}
 }
 
-func newSyncTest() (ln *net.TCPListener, client *syncClient, server *syncServer, dispatcher *testNoteDispatcher, err error) {
-	ln, addr, err := newLocalTCPListener("tcp4")
+func newSyncTest() (*net.TCPListener, *syncClient, *syncServer, *testNoteDispatcher, error) {
+	ln, addr, err := newLocalTCPListener()
 	if err != nil {
-		err = fmt.Errorf("Failed to create local TCP listener: %v", err)
-		return
+		return nil, nil, nil, nil, fmt.Errorf("Failed to create local TCP listener: %v", err)
 	}
 
 	engine := newTestEngine()
@@ -83,14 +72,14 @@ func newSyncTest() (ln *net.TCPListener, client *syncClient, server *syncServer,
 	engine.config.Peer.IPv4Addr = addr.IP
 	engine.config.SyncPort = addr.Port
 
-	server = newSyncServer(engine)
+	server := newSyncServer(engine)
 	go server.serve(ln)
 
-	client = newSyncClient(engine)
-	dispatcher = newTestNoteDispatcher()
+	client := newSyncClient(engine)
+	dispatcher := newTestNoteDispatcher()
 	client.dispatch = dispatcher.dispatch
 
-	return
+	return ln, client, server, dispatcher, nil
 }
 
 func TestBasicSync(t *testing.T) {
@@ -106,10 +95,10 @@ func TestBasicSync(t *testing.T) {
 	// The server should send a desync at the start of the session.
 	n, err := dispatcher.nextNote()
 	if err != nil {
-		t.Fatalf("Expected desync, got error: %v", err)
+		t.Fatalf("Expected initial desync, got error: %v", err)
 	}
 	if n.Type != SNTDesync {
-		t.Fatalf("Got %v, want %v", n.Type, SNTDesync)
+		t.Fatalf("Initial note type = %v, want %v", n.Type, SNTDesync)
 	}
 
 	// Send a notification for each sync note type.
@@ -117,10 +106,10 @@ func TestBasicSync(t *testing.T) {
 		server.notify(&SyncNote{Type: nt})
 		n, err := dispatcher.nextNote()
 		if err != nil {
-			t.Fatalf("Expected note, got error: %v", err)
+			t.Fatalf("After sending %v, nextNote failed: %v", nt, err)
 		}
 		if n.Type != nt {
-			t.Errorf("Got sync note %v, want %v", n.Type, nt)
+			t.Errorf("After sending %v, nextNote = %v, want %v", nt, n, nt)
 		}
 	}
 }
@@ -136,20 +125,54 @@ func TestSyncHeartbeats(t *testing.T) {
 	go server.run()
 	go client.run()
 
+	// TODO: Test we can disable and re-enable the client
+
+	// Enabling briefly shouldn't have time to get a heartbeat, but should get
+	// the initial desync.
 	client.enable()
-	time.Sleep(1500 * time.Millisecond)
+	// Make sure we can read the desync (and flush it so the later client doesn't
+	// see it).
+	if n, err := dispatcher.nextNote(); err != nil || n.Type != SNTDesync {
+		t.Errorf("During short enablement, nextNote() = %v, %v; expected desync", n, err)
+	} else {
+		t.Logf("Got short note: %v, %v", n, err)
+	}
 	client.disable()
 
-	want := []SyncNoteType{SNTDesync, SNTHeartbeat, SNTHeartbeat}
-	for _, nt := range want {
+	// Now let it run long enough to get some heartbeats.
+	// Any heartbeats sent to the first enablement of the client shouldn't appear here.
+	client.enable()
+	time.Sleep(2*server.heartbeatInterval + 50*time.Millisecond)
+	client.disable()
+	// Waiting longer after disabling shouldn't send another heartbeat (and
+	// should make sure we receive the ones we had queued).
+	time.Sleep(server.heartbeatInterval + 50*time.Millisecond)
+
+	wantNotes := []SyncNoteType{SNTDesync, SNTHeartbeat, SNTHeartbeat}
+	for _, nt := range wantNotes {
 		n, err := dispatcher.nextNote()
-		if err != nil {
-			t.Fatalf("Expected note, got error: %v", err)
+		if err != nil || n.Type != nt {
+			t.Errorf("After long enablement, nextNote() = %v, %v; want Type = %v", n, err, nt)
+			continue
 		}
-		if n.Type != nt {
-			t.Errorf("Got sync note %v, want %v", n.Type, nt)
+		t.Logf("After long enablement: got sync note %v", n)
+	}
+
+	n, err := dispatcher.nextNote()
+	if err != nil {
+		// TODO: Confirm it's a timeout?
+		t.Logf("After flushing expected notes, final nextNote read failed expectedly: %v", err)
+		return
+	}
+	// If we end up registering near the heartbeat boundaries, we might
+	// legitimately get 3 heartbeats, but no more!
+	if n.Type != SNTHeartbeat {
+		t.Errorf("After long enablement, got additional note %v, expected only %d notes", n, len(wantNotes))
+	} else {
+		n, err := dispatcher.nextNote()
+		if err == nil {
+			t.Errorf("After long enablement, got additional note %v, expected at most %d notes", n, len(wantNotes)+1)
 		}
-		t.Logf("Got %v sync note", n.Type)
 	}
 }
 
@@ -164,7 +187,16 @@ func TestSyncDesync(t *testing.T) {
 	dispatcher.notes = make(chan *SyncNote)
 
 	go client.runOnce()
-	defer func() { client.quit <- true }()
+	defer func() {
+		close(client.quit)
+		for {
+			// Drain the notes to unblock the quit reader.
+			if _, err := dispatcher.nextNote(); err != nil {
+				break
+			}
+		}
+		<-client.stopped
+	}()
 
 	// The server should send a desync at the start of the session.
 	n, err := dispatcher.nextNote()
@@ -178,6 +210,8 @@ func TestSyncDesync(t *testing.T) {
 	// Send a single notification to complete the poll.
 	server.notify(&SyncNote{Type: SNTHeartbeat})
 	time.Sleep(250 * time.Millisecond)
+	// syncClient.poll should now be blocked writing that Note to
+	// testNoteDispatcher's notes chan.
 
 	// Send enough notifications to fill the session channel buffer.
 	server.notify(&SyncNote{Type: SNTHeartbeat})
@@ -186,27 +220,30 @@ func TestSyncDesync(t *testing.T) {
 		server.notify(&SyncNote{Type: SNTHealthcheck})
 	}
 
-	// At this point the client should receive a desync.
+	// Now we unblock syncClient.poll by reading the initial notification from
+	// the local chan. At that point, it should do another Poll and see the
+	// desync.
 	received := make(map[SyncNoteType]int)
 noteLoop:
 	for i := 0; i < (sessionNotesQueueSize * 1.1); i++ {
 		n, err := dispatcher.nextNote()
 		if err != nil {
-			t.Fatalf("Expected note, got error: %v", err)
+			t.Fatalf("nextNote() failed: %v; expected note", err)
 		}
 		received[n.Type]++
 
 		switch n.Type {
-		case SNTHeartbeat:
-		case SNTHealthcheck:
+		case SNTHeartbeat, SNTHealthcheck: // ok
 		case SNTDesync:
 			break noteLoop
 		default:
-			t.Fatalf("Unexpected notification %v", n.Type)
+			t.Fatalf("Unexpected notification %v", n)
 		}
 	}
-	t.Logf("Received notifications %#v", received)
 	if received[SNTDesync] != 1 {
-		t.Errorf("Did not receive desync notification")
+		t.Errorf("While waiting for desync, received: %v; expected 1 Desync", received)
+	}
+	if received[SNTHeartbeat] != 1 {
+		t.Errorf("While waiting for desync, received: %v; expected 1 Heartbeat", received)
 	}
 }

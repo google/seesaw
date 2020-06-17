@@ -80,6 +80,7 @@ func (snt SyncNoteType) String() string {
 // SyncNote represents a synchronisation notification.
 type SyncNote struct {
 	Type SyncNoteType
+	Time time.Time
 
 	Config      *config.Notification
 	Healthcheck *SyncHealthCheckNotification
@@ -107,19 +108,10 @@ func (s *SeesawSync) Register(node net.IP, id *SyncSessionID) error {
 
 	// TODO(jsing): Reject if not master?
 
-	s.sync.sessionLock.Lock()
-	session := newSyncSession(node, s.sync.nextSessionID)
-	s.sync.nextSessionID++
-	s.sync.sessions[session.id] = session
-	s.sync.sessionLock.Unlock()
-
-	session.Lock()
-	session.expiryTime = time.Now().Add(sessionDeadtime)
-	session.Unlock()
+	session := s.sync.newSession(node)
+	log.Infof("Synchronisation session %d registered by %v", session.id, node)
 
 	*id = session.id
-
-	log.Infof("Synchronisation session %d registered by %v", *id, node)
 
 	return nil
 }
@@ -158,7 +150,7 @@ func (s *SeesawSync) Poll(id SyncSessionID, sn *SyncNotes) error {
 	session.expiryTime = time.Now().Add(sessionDeadtime)
 	if session.desync {
 		// TODO(jsing): Discard pending notes?
-		sn.Notes = append(sn.Notes, SyncNote{Type: SNTDesync})
+		sn.Notes = append(sn.Notes, SyncNote{Type: SNTDesync, Time: time.Now()})
 		session.desync = false
 		session.Unlock()
 		return nil
@@ -262,6 +254,18 @@ func newSyncServer(e *Engine) *syncServer {
 	}
 }
 
+// newSession allocates a new session ID and starts managing the session with
+// the provided node.
+func (s *syncServer) newSession(node net.IP) *syncSession {
+	s.sessionLock.Lock()
+	session := newSyncSession(node, s.nextSessionID)
+	s.nextSessionID++
+	s.sessions[session.id] = session
+	s.sessionLock.Unlock()
+
+	return session
+}
+
 // serve accepts connections from the given TCP listener and dispatches each
 // connection to the RPC server. Connections are only accepted from localhost
 // and the seesaw node that we are configured to peer with.
@@ -311,26 +315,21 @@ func (s *syncServer) notify(sn *SyncNote) {
 
 // run runs the synchronisation server, which is responsible for queueing
 // heartbeat notifications and removing expired synchronisation sessions.
-func (s *syncServer) run() error {
-	heartbeat := time.NewTicker(s.heartbeatInterval)
-	for {
-		select {
-		case <-heartbeat.C:
-			now := time.Now()
-			s.sessionLock.Lock()
-			for id, ss := range s.sessions {
-				ss.RLock()
-				expiry := ss.expiryTime
-				ss.RUnlock()
-				if now.After(expiry) {
-					log.Warningf("Sync session %d with %v has expired", id, ss.node)
-					delete(s.sessions, id)
-					continue
-				}
-				ss.addNote(&SyncNote{Type: SNTHeartbeat})
+func (s *syncServer) run() {
+	for now := range time.Tick(s.heartbeatInterval) {
+		s.sessionLock.Lock()
+		for id, ss := range s.sessions {
+			ss.RLock()
+			expiry := ss.expiryTime
+			ss.RUnlock()
+			if now.After(expiry) {
+				log.Warningf("Sync session %d with %v has expired", id, ss.node)
+				delete(s.sessions, id)
+				continue
 			}
-			s.sessionLock.Unlock()
+			ss.addNote(&SyncNote{Type: SNTHeartbeat, Time: now})
 		}
+		s.sessionLock.Unlock()
 	}
 }
 
@@ -535,7 +534,7 @@ func (sc *syncClient) handleOverride(sn *SyncNote) {
 }
 
 // run runs the synchronisation client.
-func (sc *syncClient) run() error {
+func (sc *syncClient) run() {
 	for {
 		select {
 		case <-sc.stopped:
@@ -544,6 +543,8 @@ func (sc *syncClient) run() error {
 		default:
 			sc.runOnce()
 			select {
+			// TODO: If we receive on quit inside runOnce, we have to wait the
+			// 5s here before enable will work again.
 			case <-time.After(5 * time.Second):
 			case <-sc.quit:
 				sc.stopped <- true
