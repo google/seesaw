@@ -137,10 +137,6 @@ func TestSyncHeartbeats(t *testing.T) {
 	go client.run()
 
 	client.enable()
-	client.disable()
-	time.Sleep(500 * time.Millisecond)
-
-	client.enable()
 	time.Sleep(1500 * time.Millisecond)
 	client.disable()
 
