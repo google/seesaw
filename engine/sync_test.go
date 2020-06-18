@@ -125,8 +125,6 @@ func TestSyncHeartbeats(t *testing.T) {
 	go server.run()
 	go client.run()
 
-	// TODO: Test we can disable and re-enable the client
-
 	// Enabling briefly shouldn't have time to get a heartbeat, but should get
 	// the initial desync.
 	client.enable()

@@ -206,18 +206,6 @@ type syncSession struct {
 	notes chan *SyncNote
 }
 
-// newSyncSession returns an initialised synchronisation session.
-func newSyncSession(node net.IP, id SyncSessionID) *syncSession {
-	return &syncSession{
-		id:         id,
-		node:       node,
-		desync:     true,
-		startTime:  time.Now(),
-		expiryTime: time.Now().Add(sessionDeadtime),
-		notes:      make(chan *SyncNote, sessionNotesQueueSize),
-	}
-}
-
 // addNote adds a notification to the synchronisation session. If the notes
 // channel is full the session is marked as desynchronised and the notification
 // is discarded.
@@ -258,10 +246,17 @@ func newSyncServer(e *Engine) *syncServer {
 // the provided node.
 func (s *syncServer) newSession(node net.IP) *syncSession {
 	s.sessionLock.Lock()
-	session := newSyncSession(node, s.nextSessionID)
+	defer s.sessionLock.Unlock()
+	session := &syncSession{
+		id:         s.nextSessionID,
+		node:       node,
+		desync:     true,
+		startTime:  time.Now(),
+		expiryTime: time.Now().Add(sessionDeadtime),
+		notes:      make(chan *SyncNote, sessionNotesQueueSize),
+	}
 	s.nextSessionID++
 	s.sessions[session.id] = session
-	s.sessionLock.Unlock()
 
 	return session
 }
