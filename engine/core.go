@@ -78,6 +78,8 @@ type Engine struct {
 
 	vservers map[string]*vserver
 
+	vserverAccess *vserverAccess
+
 	vserverSnapshots map[string]*seesaw.Vserver
 	vserverLock      sync.RWMutex
 	vserverChan      chan *seesaw.Vserver
@@ -105,6 +107,8 @@ func newEngineWithNCC(cfg *config.EngineConfig, ncc ncclient.NCC) *Engine {
 		shutdownARP: make(chan bool),
 		shutdownIPC: make(chan bool),
 		shutdownRPC: make(chan bool),
+
+		vserverAccess: newVserverAccess(),
 
 		vserverSnapshots: make(map[string]*seesaw.Vserver),
 		vserverChan:      make(chan *seesaw.Vserver, 1000),
@@ -378,9 +382,17 @@ func (e *Engine) manager() {
 			log.Infof("Received cluster config notification; %v", &n)
 			e.syncServer.notify(&SyncNote{Type: SNTConfigUpdate})
 
+			vua, err := newVserverUserAccess(n.Cluster)
+			if err != nil {
+				log.Errorf("Ignoring notification due to invalid vserver access configuration: %v", err)
+				return
+			}
+
 			e.clusterLock.Lock()
 			e.cluster = n.Cluster
 			e.clusterLock.Unlock()
+
+			e.vserverAccess.update(vua)
 
 			if n.MetadataOnly {
 				log.Infof("Only metadata changes found, processing complete.")
