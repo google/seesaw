@@ -82,10 +82,10 @@ var ipvsTests = []struct {
 			Scheduler:    "wlc",
 		},
 		[]ipvs.Destination{
-			{Address: net.ParseIP("1.1.1.2"), Port: 0, Weight: 1},
-			{Address: net.ParseIP("1.1.1.3"), Port: 0, Weight: 1},
-			{Address: net.ParseIP("1.1.1.4"), Port: 0, Weight: 1},
-			{Address: net.ParseIP("1.1.1.5"), Port: 0, Weight: 1},
+			{Address: net.ParseIP("1.1.1.2"), Port: 0, Weight: 1, Flags: ipvs.DFForwardRoute},
+			{Address: net.ParseIP("1.1.1.3"), Port: 0, Weight: 1, Flags: ipvs.DFForwardRoute},
+			{Address: net.ParseIP("1.1.1.4"), Port: 0, Weight: 1, Flags: ipvs.DFForwardRoute},
+			{Address: net.ParseIP("1.1.1.5"), Port: 0, Weight: 1, Flags: ipvs.DFForwardRoute},
 		},
 	},
 
@@ -98,10 +98,10 @@ var ipvsTests = []struct {
 			Scheduler:    "wrr",
 		},
 		[]ipvs.Destination{
-			{Address: net.ParseIP("2012::2"), Port: 0, Weight: 1},
-			{Address: net.ParseIP("2012::3"), Port: 0, Weight: 1},
-			{Address: net.ParseIP("2012::4"), Port: 0, Weight: 1},
-			{Address: net.ParseIP("2012::5"), Port: 0, Weight: 1},
+			{Address: net.ParseIP("2012::2"), Port: 0, Weight: 1, Flags: ipvs.DFForwardTunnel},
+			{Address: net.ParseIP("2012::3"), Port: 0, Weight: 1, Flags: ipvs.DFForwardTunnel},
+			{Address: net.ParseIP("2012::4"), Port: 0, Weight: 1, Flags: ipvs.DFForwardTunnel},
+			{Address: net.ParseIP("2012::5"), Port: 0, Weight: 1, Flags: ipvs.DFForwardTunnel},
 		},
 	},
 }

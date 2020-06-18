@@ -550,7 +550,7 @@ var vserverTests = []struct {
 						Port:         443,
 						Proto:        seesaw.IPProtoTCP,
 						Scheduler:    seesaw.LBSchedulerMH,
-						Mode:         seesaw.LBModeDSR, // protobuf default
+						Mode:         seesaw.LBModeTUN,
 						Healthchecks: make(map[string]*Healthcheck),
 					},
 				},

@@ -148,6 +148,9 @@ message VserverEntry {
 
     // See --masquerding in man ipvsadm(8)
     NAT = 2;
+
+    // See --ipip in man ipvsadm(8)
+    TUN = 3;
   }
   optional Mode mode = 6 [default = DSR];
 

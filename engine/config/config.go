@@ -481,6 +481,8 @@ func addVservers(c *Cluster, p *pb.Cluster) error {
 				mode = seesaw.LBModeDSR
 			case pb.VserverEntry_NAT:
 				mode = seesaw.LBModeNAT
+			case pb.VserverEntry_TUN:
+				mode = seesaw.LBModeTUN
 			default:
 				// TODO(angusc): Consider this VServer broken.
 				log.Errorf("%v: Unsupported mode %v", vs.GetName(), ve.GetMode())
