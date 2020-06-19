@@ -31,14 +31,16 @@ import (
 // the authenticated information to a context.
 type Authenticator interface {
 	// AuthInit will be called once when the ECU is run to set up required
-	// resources for authentication. If nothing is needed, Authenticators
-	// should simply return nil. If an error is returned, a warning will be
-	// logged but the ECU will continue to run.
+	// resources for authentication. If nothing is needed, it should simply
+	// return nil. If an error is returned, a warning will be
+	// logged but the ECU will continue to run, so implementations should ensure
+	// Authenticate does not crash if AuthInit fails.
 	AuthInit() error
 
 	// Authenticate inspects the provided context (particularly ctx.AuthToken)
 	// and either returns an error or creates a child context treated as
-	// authenticated and extra fields needed for authorization (e.g. ctx.User).
+	// authenticated (ctx.AuthType == ipc.ATSSO) and fields needed for
+	// authorization checks (ctx.User).
 	Authenticate(ctx *ipc.Context) (*ipc.Context, error)
 }
 
