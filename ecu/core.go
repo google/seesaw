@@ -15,7 +15,7 @@
 // Author: jsing@google.com (Joel Sing)
 
 // Package ecu implements the Seesaw v2 ECU component, which provides
-//an externally accessible interface to monitor and control the
+// an externally accessible interface to monitor and control the
 // Seesaw Node.
 package ecu
 
