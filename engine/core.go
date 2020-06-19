@@ -380,7 +380,7 @@ func (e *Engine) manager() {
 
 		case n := <-e.notifier.C:
 			log.Infof("Received cluster config notification; %v", &n)
-			e.syncServer.notify(&SyncNote{Type: SNTConfigUpdate})
+			e.syncServer.notify(&SyncNote{Type: SNTConfigUpdate, Time: time.Now()})
 
 			vua, err := newVserverUserAccess(n.Cluster)
 			if err != nil {
@@ -439,7 +439,7 @@ func (e *Engine) manager() {
 			e.vserverLock.Unlock()
 
 		case override := <-e.overrideChan:
-			sn := &SyncNote{Type: SNTOverride}
+			sn := &SyncNote{Type: SNTOverride, Time: time.Now()}
 			switch o := override.(type) {
 			case *seesaw.BackendOverride:
 				sn.BackendOverride = o
