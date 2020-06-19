@@ -22,15 +22,49 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"strconv"
 	"strings"
 
 	"github.com/google/seesaw/common/seesaw"
 	spb "github.com/google/seesaw/pb/seesaw"
 )
 
+var authGroupAdmin, authGroupOperator, authGroupReader string
+
+// AuthGroups returns a list of groups who are permitted to authenticate.
+func AuthGroups() []string {
+	var r []string
+	if authGroupAdmin != "" {
+		r = append(r, authGroupAdmin)
+	}
+	if authGroupOperator != "" {
+		r = append(r, authGroupOperator)
+	}
+	if authGroupReader != "" {
+		r = append(r, authGroupReader)
+	}
+	return r
+}
+
+// SetAdminGroup sets the admin group.
+func SetAdminGroup(g string) {
+	authGroupAdmin = g
+}
+
+// SetOperatorGroup sets the operator group.
+func SetOperatorGroup(g string) {
+	authGroupOperator = g
+}
+
+// SetReaderGroup sets the reader group.
+func SetReaderGroup(g string) {
+	authGroupReader = g
+}
+
 // AuthType specifies the type of authentication established.
 type AuthType int
 
+// Various AuthTypes.
 const (
 	ATNone AuthType = iota
 	ATSSO
@@ -66,7 +100,7 @@ type Context struct {
 	Groups    []string
 	Peer      Peer // Untrusted - client provided
 	Proxy     Peer
-	User      string
+	User      User
 }
 
 // NewContext returns a new context for the given component.
@@ -93,9 +127,10 @@ func NewTrustedContext(component seesaw.Component) *Context {
 	ctx := NewContext(component)
 	ctx.AuthType = ATTrusted
 	if u, err := user.Current(); err == nil {
-		ctx.User = fmt.Sprintf("%s [uid %s]", u.Username, u.Uid)
+		ctx.User.Username = u.Username
+		ctx.User.UID = u.Uid
 	} else {
-		ctx.User = fmt.Sprintf("(unknown) [uid %d]", os.Getuid())
+		ctx.User.UID = strconv.Itoa(os.Getuid())
 	}
 	return ctx
 }
@@ -120,6 +155,56 @@ func (ctx *Context) String() string {
 // IsTrusted returns whether a context came from a trusted source.
 func (ctx *Context) IsTrusted() bool {
 	return ctx.AuthType == ATTrusted
+}
+
+// User contains information identifying a user.
+type User struct {
+	Groups   []string
+	UID      string
+	Username string
+}
+
+// String returns the string representation of a user.
+func (u User) String() string {
+	s := u.Username
+	if u.Username == "" {
+		s = "(unknown)"
+	}
+	if u.UID != "" {
+		s = fmt.Sprintf("%s [uid %s]", s, u.UID)
+	}
+	return s
+}
+
+// IsAdmin returns whether the user has administration rights.
+func (u User) IsAdmin() bool {
+	for _, g := range u.Groups {
+		if g == authGroupAdmin {
+			return true
+		}
+	}
+	return false
+}
+
+// IsOperator returns whether the user has operator rights (includes admins).
+func (u User) IsOperator() bool {
+	for _, g := range u.Groups {
+		if g == authGroupAdmin || g == authGroupOperator {
+			return true
+		}
+	}
+	return false
+}
+
+// IsReader returns whether the user has reader rights (includes operators and
+// admins).
+func (u User) IsReader() bool {
+	for _, g := range u.Groups {
+		if g == authGroupAdmin || g == authGroupOperator || g == authGroupReader {
+			return true
+		}
+	}
+	return false
 }
 
 // ConfigSource contains data for a config source IPC.
