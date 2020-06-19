@@ -528,10 +528,19 @@ var vserverTests = []struct {
 						Type: seesaw.AnycastVIP,
 					},
 				},
-				AccessGrants: map[string]*AccessGrant{},
-				Enabled:      true,
-				UseFWM:       false,
-				Warnings:     nil,
+				AccessGrants: map[string]*AccessGrant{
+					"group:irc-admin": {
+						Grantee: "irc-admin",
+						IsGroup: true,
+					},
+					"group:irc-oncall": {
+						Grantee: "irc-oncall",
+						IsGroup: true,
+					},
+				},
+				Enabled:  true,
+				UseFWM:   false,
+				Warnings: nil,
 			},
 		},
 	},
