@@ -14,11 +14,9 @@
 
 // Author: jsing@google.com (Joel Sing)
 
-/*
-	Package ecu implements the Seesaw v2 ECU component, which provides
-	an externally accessible interface to monitor and control the
-	Seesaw Node.
-*/
+// Package ecu implements the Seesaw v2 ECU component, which provides
+//an externally accessible interface to monitor and control the
+// Seesaw Node.
 package ecu
 
 import (
@@ -39,7 +37,7 @@ import (
 	log "github.com/golang/glog"
 )
 
-var defaultConfig = ECUConfig{
+var defaultConfig = Config{
 	CACertsFile:    path.Join(seesaw.ConfigPath, "ssl", "ca.crt"),
 	ControlAddress: ":10256",
 	ECUCertFile:    path.Join(seesaw.ConfigPath, "ssl", "seesaw.crt"),
@@ -49,8 +47,8 @@ var defaultConfig = ECUConfig{
 	UpdateInterval: 10 * time.Second,
 }
 
-// ECUConfig provides configuration details for a Seesaw ECU.
-type ECUConfig struct {
+// Config provides configuration details for a Seesaw ECU.
+type Config struct {
 	CACertsFile    string
 	ControlAddress string
 	ECUCertFile    string
@@ -60,23 +58,23 @@ type ECUConfig struct {
 	UpdateInterval time.Duration
 }
 
-// DefaultECUConfig returns the default ECU configuration.
-func DefaultECUConfig() ECUConfig {
+// DefaultConfig returns the default ECU configuration.
+func DefaultConfig() Config {
 	return defaultConfig
 }
 
 // ECU contains the data necessary to run the Seesaw v2 ECU.
 type ECU struct {
-	cfg             *ECUConfig
+	cfg             *Config
 	shutdown        chan bool
 	shutdownControl chan bool
 	shutdownMonitor chan bool
 }
 
-// NewECU returns an initialised ECU struct.
-func NewECU(cfg *ECUConfig) *ECU {
+// New returns an initialised ECU struct.
+func New(cfg *Config) *ECU {
 	if cfg == nil {
-		defaultCfg := DefaultECUConfig()
+		defaultCfg := DefaultConfig()
 		cfg = &defaultCfg
 	}
 	return &ECU{

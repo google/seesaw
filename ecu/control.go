@@ -48,10 +48,7 @@ func (s *SeesawECU) Failover(ctx *ipc.Context, reply *int) error {
 	}
 	defer authConn.Close()
 
-	if err := authConn.Failover(); err != nil {
-		return err
-	}
-	return nil
+	return authConn.Failover()
 }
 
 // ClusterStatus returns status information about this Seesaw Cluster.
@@ -127,10 +124,7 @@ func (s *SeesawECU) ConfigReload(ctx *ipc.Context, reply *int) error {
 	}
 	defer authConn.Close()
 
-	if err := authConn.ConfigReload(); err != nil {
-		return err
-	}
-	return nil
+	return authConn.ConfigReload()
 }
 
 // ConfigSource requests the configuration source be changed to the specified

@@ -27,19 +27,19 @@ import (
 
 var (
 	controlAddress = flag.String("control_address",
-		ecu.DefaultECUConfig().ControlAddress, "ECU control address")
+		ecu.DefaultConfig().ControlAddress, "ECU control address")
 	monitorAddress = flag.String("monitor_address",
-		ecu.DefaultECUConfig().MonitorAddress, "ECU monitor address")
+		ecu.DefaultConfig().MonitorAddress, "ECU monitor address")
 )
 
 func main() {
 	flag.Parse()
 
-	ecuCfg := ecu.DefaultECUConfig()
+	ecuCfg := ecu.DefaultConfig()
 	ecuCfg.ControlAddress = *controlAddress
 	ecuCfg.MonitorAddress = *monitorAddress
 
-	ecu := ecu.NewECU(&ecuCfg)
+	ecu := ecu.New(&ecuCfg)
 	server.ShutdownHandler(ecu)
 	ecu.Run()
 }
