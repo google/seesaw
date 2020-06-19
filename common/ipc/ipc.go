@@ -152,6 +152,11 @@ func (ctx *Context) String() string {
 	return strings.Join(s, " ")
 }
 
+// IsAuthenticated returns whether a context is authenticated.
+func (ctx *Context) IsAuthenticated() bool {
+	return ctx.AuthType == ATSSO
+}
+
 // IsTrusted returns whether a context came from a trusted source.
 func (ctx *Context) IsTrusted() bool {
 	return ctx.AuthType == ATTrusted
