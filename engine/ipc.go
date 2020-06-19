@@ -59,7 +59,7 @@ func (s *SeesawEngine) accessCheck(ctx *ipc.Context, vserver, username string) (
 	case ctx.User.IsOperator():
 		hasAccess, reason := s.engine.vserverAccess.hasAccess(vserver, username)
 		if !hasAccess {
-			return "", fmt.Errorf("%w: user %q is not authorized to control %q", errAccess, username, vserver)
+			return "", fmt.Errorf("%v: user %q is not authorized to control %q", errAccess, username, vserver)
 		}
 		return reason, nil
 	default:
