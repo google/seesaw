@@ -48,18 +48,17 @@ type SeesawEngine struct {
 	engine *Engine
 }
 
-// accessCheck performs an access check based on the given context, vserver
-// and username.
-func (s *SeesawEngine) accessCheck(ctx *ipc.Context, vserver, username string) (string, error) {
+// accessCheck performs an access check based on the given context and vserver.
+func (s *SeesawEngine) accessCheck(ctx *ipc.Context, vserver string) (string, error) {
 	switch {
 	case ctx.IsTrusted():
 		return "trusted", nil
 	case ctx.User.IsAdmin():
 		return "administrator", nil
 	case ctx.User.IsOperator():
-		hasAccess, reason := s.engine.vserverAccess.hasAccess(vserver, username)
+		hasAccess, reason := s.engine.vserverAccess.hasAccess(vserver, ctx.User.Username)
 		if !hasAccess {
-			return "", fmt.Errorf("%v: user %q is not authorized to control %q", errAccess, username, vserver)
+			return "", fmt.Errorf("%v: user %q is not authorized to control %q", errAccess, ctx.User.Username, vserver)
 		}
 		return reason, nil
 	default:
@@ -449,7 +448,7 @@ func (s *SeesawEngine) OverrideVserver(args *ipc.Override, reply *int) error {
 		return errors.New("override vserver is nil")
 	}
 
-	reason, err := s.accessCheck(ctx, override.VserverName, ctx.User.Username)
+	reason, err := s.accessCheck(ctx, override.VserverName)
 	if err != nil {
 		log.Warningf("Vserver override on %q denied for %v: %v", override.VserverName, ctx, err)
 		return err
