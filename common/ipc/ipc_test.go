@@ -14,7 +14,11 @@
 
 package ipc
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/seesaw/common/seesaw"
+)
 
 func TestUserRights(t *testing.T) {
 	// Restore previous state after test
@@ -29,42 +33,56 @@ func TestUserRights(t *testing.T) {
 		isAdmin    bool
 		isOperator bool
 		isReader   bool
+		canRead    bool
+		canWrite   bool
 	}{
 		{
 			user:       User{},
 			isAdmin:    false,
 			isOperator: false,
 			isReader:   false,
+			canRead:    false,
+			canWrite:   false,
 		},
 		{
 			user:       User{Groups: []string{}},
 			isAdmin:    false,
 			isOperator: false,
 			isReader:   false,
+			canRead:    false,
+			canWrite:   false,
 		},
 		{
 			user:       User{Groups: AuthGroups()},
 			isAdmin:    true,
 			isOperator: true,
 			isReader:   true,
+			canRead:    true,
+			canWrite:   true,
 		},
 		{
 			user:       User{Groups: []string{"readers"}},
 			isAdmin:    false,
 			isOperator: false,
 			isReader:   true,
+			canRead:    true,
+			canWrite:   false,
 		},
 		{
 			user:       User{Groups: []string{"operators"}},
 			isAdmin:    false,
 			isOperator: true,
 			isReader:   true,
+			canRead:    true,
+			canWrite:   false,
 		},
 		{
 			user:       User{Groups: []string{"admins"}},
 			isAdmin:    true,
 			isOperator: true,
 			isReader:   true,
+			canRead:    true,
+			canWrite:   true,
 		},
 	}
 	for _, test := range tests {
@@ -76,6 +94,14 @@ func TestUserRights(t *testing.T) {
 		}
 		if got, want := test.user.IsReader(), test.isReader; got != want {
 			t.Errorf("(%#v).IsReader() = %v, want %v", test.user, got, want)
+		}
+		ctx := NewAuthContext(seesaw.SCECU, "token")
+		ctx.User = test.user
+		if got, want := ctx.CanRead(), test.canRead; got != want {
+			t.Errorf("(%#v).CanRead() = %v, want %v", ctx, got, want)
+		}
+		if got, want := ctx.CanWrite(), test.canWrite; got != want {
+			t.Errorf("(%#v).CanWrite() = %v, want %v", ctx, got, want)
 		}
 	}
 }
