@@ -162,6 +162,20 @@ func (ctx *Context) IsTrusted() bool {
 	return ctx.AuthType == ATTrusted
 }
 
+// CanRead reports whether the context is allowed to read data or config.
+// Either the context is trusted, or the remote user is authenticated and
+// is authorized to read.
+func (ctx *Context) CanRead() bool {
+	return ctx.IsTrusted() || ctx.IsAuthenticated() && ctx.User.IsReader()
+}
+
+// CanWrite reports whether the context is allowed to mutate Seesaw state.
+// Either the context is trusted, or the remote user is authenticated and
+// is a member of the admin group.
+func (ctx *Context) CanWrite() bool {
+	return ctx.IsTrusted() || ctx.IsAuthenticated() && ctx.User.IsAdmin()
+}
+
 // User contains information identifying a user.
 type User struct {
 	Groups   []string
