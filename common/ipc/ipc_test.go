@@ -96,6 +96,7 @@ func TestUserRights(t *testing.T) {
 			t.Errorf("(%#v).IsReader() = %v, want %v", test.user, got, want)
 		}
 		ctx := NewAuthContext(seesaw.SCECU, "token")
+		ctx.AuthType = ATSSO
 		ctx.User = test.user
 		if got, want := ctx.CanRead(), test.canRead; got != want {
 			t.Errorf("(%#v).CanRead() = %v, want %v", ctx, got, want)
