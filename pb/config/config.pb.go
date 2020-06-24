@@ -301,7 +301,7 @@ func (Healthcheck_Mode) EnumDescriptor() ([]byte, []int) {
 	return file_config_proto_rawDescGZIP(), []int{3, 1}
 }
 
-// See --scheduler in man ipvsadm(8)
+// See --scheduler in man ipvsadm(8).
 type VserverEntry_Scheduler int32
 
 const (
@@ -310,7 +310,7 @@ const (
 	VserverEntry_LC  VserverEntry_Scheduler = 3
 	VserverEntry_WLC VserverEntry_Scheduler = 4
 	VserverEntry_SH  VserverEntry_Scheduler = 5
-	// NOTE: MH scheduler option is available after Kernel 4.18
+	// NOTE: MH scheduler option is available after Kernel 4.18.
 	//
 	// It is typically used without conntrack sync. Additional sysctl settings
 	// such as `net.ipv4.vs.sloppy_tcp` is required when operating in that mode
@@ -383,11 +383,11 @@ func (VserverEntry_Scheduler) EnumDescriptor() ([]byte, []int) {
 type VserverEntry_Mode int32
 
 const (
-	// See --gatewaying in man ipvsadm(8)
+	// See --gatewaying in man ipvsadm(8).
 	VserverEntry_DSR VserverEntry_Mode = 1
-	// See --masquerding in man ipvsadm(8)
+	// See --masquerding in man ipvsadm(8).
 	VserverEntry_NAT VserverEntry_Mode = 2
-	// See --ipip in man ipvsadm(8)
+	// See --ipip in man ipvsadm(8).
 	VserverEntry_TUN VserverEntry_Mode = 3
 )
 
@@ -559,13 +559,13 @@ type Host struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Fully qualified hostname
+	// Fully qualified hostname.
 	Fqdn *string `protobuf:"bytes,1,req,name=fqdn" json:"fqdn,omitempty"`
-	// An IPv4 address and prefix length in CIDR format
+	// An IPv4 address and prefix length in CIDR format.
 	Ipv4 *string `protobuf:"bytes,2,opt,name=ipv4" json:"ipv4,omitempty"`
-	// An IPv6 address and prefix length in CIDR format
+	// An IPv6 address and prefix length in CIDR format.
 	Ipv6 *string `protobuf:"bytes,3,opt,name=ipv6" json:"ipv6,omitempty"`
-	// Host status
+	// Host status.
 	Status *Host_Status `protobuf:"varint,4,opt,name=status,enum=Host_Status" json:"status,omitempty"`
 }
 
@@ -752,9 +752,9 @@ type Healthcheck struct {
 	unknownFields protoimpl.UnknownFields
 
 	Type *Healthcheck_Type `protobuf:"varint,1,req,name=type,enum=Healthcheck_Type" json:"type,omitempty"`
-	// Healthcheck interval in seconds
+	// Healthcheck interval in seconds.
 	Interval *int32 `protobuf:"varint,2,opt,name=interval,def=10" json:"interval,omitempty"`
-	// Healthcheck timeout in seconds
+	// Healthcheck timeout in seconds.
 	Timeout *int32 `protobuf:"varint,3,opt,name=timeout,def=5" json:"timeout,omitempty"`
 	// Healthcheck port.  For Vserver healthchecks, this field is required.
 	// For VserverEntry healthchecks, it is optional and uses the VserverEntry
@@ -911,7 +911,7 @@ type VserverEntry struct {
 	Port      *int32                  `protobuf:"varint,2,req,name=port" json:"port,omitempty"`
 	Scheduler *VserverEntry_Scheduler `protobuf:"varint,5,opt,name=scheduler,enum=VserverEntry_Scheduler,def=4" json:"scheduler,omitempty"`
 	Mode      *VserverEntry_Mode      `protobuf:"varint,6,opt,name=mode,enum=VserverEntry_Mode,def=1" json:"mode,omitempty"`
-	// See --persisent in man ipvsadm(8)
+	// See --persisent in man ipvsadm(8).
 	Persistence *int32 `protobuf:"varint,7,opt,name=persistence" json:"persistence,omitempty"`
 	// Continue sending packets for existing connections to the same backend,
 	// even when that backend is failing healthchecks.
@@ -924,13 +924,13 @@ type VserverEntry struct {
 	// The minimum fraction of backends that must be healthy for vserver to become
 	// active. Default is 0.0 .
 	ServerHighWatermark *float32 `protobuf:"fixed32,10,opt,name=server_high_watermark,json=serverHighWatermark" json:"server_high_watermark,omitempty"`
-	// --l-threshold per man ipvsadm(8)
+	// --l-threshold per man ipvsadm(8).
 	Lthreshold *int32 `protobuf:"varint,11,opt,name=lthreshold" json:"lthreshold,omitempty"`
-	// --u-threshold per man ipvsadm(8)
+	// --u-threshold per man ipvsadm(8).
 	Uthreshold *int32 `protobuf:"varint,12,opt,name=uthreshold" json:"uthreshold,omitempty"`
-	// The healthchecks to perform on the backends
+	// The healthchecks to perform on the backends.
 	Healthcheck []*Healthcheck `protobuf:"bytes,13,rep,name=healthcheck" json:"healthcheck,omitempty"`
-	// Use "one packet" load balancing
+	// Use "one packet" load balancing.
 	OnePacket *bool `protobuf:"varint,14,opt,name=one_packet,json=onePacket" json:"one_packet,omitempty"`
 }
 
@@ -1061,11 +1061,11 @@ type AccessGrant struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The user or group
+	// The user or group.
 	Grantee *string `protobuf:"bytes,1,req,name=grantee" json:"grantee,omitempty"`
-	// The Role granted to the grantee
+	// The Role granted to the grantee.
 	Role *AccessGrant_Role `protobuf:"varint,2,req,name=role,enum=AccessGrant_Role" json:"role,omitempty"`
-	// The Type of AccessGrant
+	// The Type of AccessGrant.
 	Type *AccessGrant_Type `protobuf:"varint,3,req,name=type,enum=AccessGrant_Type" json:"type,omitempty"`
 }
 
@@ -1127,9 +1127,9 @@ type AccessGroup struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The name of the group
+	// The name of the group.
 	Name *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	// The members of the group
+	// The members of the group.
 	Member []string `protobuf:"bytes,2,rep,name=member" json:"member,omitempty"`
 }
 
@@ -1188,7 +1188,7 @@ type Vserver struct {
 	Name *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
 	// VIP hostname and IP(s).
 	EntryAddress *Host `protobuf:"bytes,2,req,name=entry_address,json=entryAddress" json:"entry_address,omitempty"`
-	// Contact info for Responsible Party
+	// Contact info for Responsible Party.
 	Rp *string `protobuf:"bytes,3,req,name=rp" json:"rp,omitempty"`
 	// Use firewall mark instead of individual service configurations.
 	UseFwm       *bool           `protobuf:"varint,4,opt,name=use_fwm,json=useFwm" json:"use_fwm,omitempty"`
