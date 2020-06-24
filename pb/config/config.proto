@@ -32,16 +32,16 @@ message Host {
     PROPOSED = 7;
   }
 
-  // Fully qualified hostname
+  // Fully qualified hostname.
   required string fqdn = 1;
 
-  // An IPv4 address and prefix length in CIDR format
+  // An IPv4 address and prefix length in CIDR format.
   optional string ipv4 = 2;
 
-  // An IPv6 address and prefix length in CIDR format
+  // An IPv6 address and prefix length in CIDR format.
   optional string ipv6 = 3;
 
-  // Host status
+  // Host status.
   optional Status status = 4;
 }
 
@@ -76,10 +76,10 @@ message Healthcheck {
 
   required Type type = 1;
 
-  // Healthcheck interval in seconds
+  // Healthcheck interval in seconds.
   optional int32 interval = 2 [default = 10];
 
-  // Healthcheck timeout in seconds
+  // Healthcheck timeout in seconds.
   optional int32 timeout = 3 [default = 5];
 
   // Healthcheck port.  For Vserver healthchecks, this field is required.
@@ -122,14 +122,14 @@ message VserverEntry {
 
   required int32 port = 2;
 
-  // See --scheduler in man ipvsadm(8)
+  // See --scheduler in man ipvsadm(8).
   enum Scheduler {
     RR = 1;
     WRR = 2;
     LC = 3;
     WLC = 4;
     SH = 5;
-    // NOTE: MH scheduler option is available after Kernel 4.18
+    // NOTE: MH scheduler option is available after Kernel 4.18.
     //
     // It is typically used without conntrack sync. Additional sysctl settings
     // such as `net.ipv4.vs.sloppy_tcp` is required when operating in that mode
@@ -143,18 +143,18 @@ message VserverEntry {
   }
   optional Scheduler scheduler = 5 [default = WLC];
   enum Mode {
-    // See --gatewaying in man ipvsadm(8)
+    // See --gatewaying in man ipvsadm(8).
     DSR = 1;
 
-    // See --masquerding in man ipvsadm(8)
+    // See --masquerding in man ipvsadm(8).
     NAT = 2;
 
-    // See --ipip in man ipvsadm(8)
+    // See --ipip in man ipvsadm(8).
     TUN = 3;
   }
   optional Mode mode = 6 [default = DSR];
 
-  // See --persisent in man ipvsadm(8)
+  // See --persisent in man ipvsadm(8).
   optional int32 persistence = 7;
 
   // Continue sending packets for existing connections to the same backend,
@@ -171,16 +171,16 @@ message VserverEntry {
   // active. Default is 0.0 .
   optional float server_high_watermark = 10;
 
-  // --l-threshold per man ipvsadm(8)
+  // --l-threshold per man ipvsadm(8).
   optional int32 lthreshold = 11;
 
-  // --u-threshold per man ipvsadm(8)
+  // --u-threshold per man ipvsadm(8).
   optional int32 uthreshold = 12;
 
-  // The healthchecks to perform on the backends
+  // The healthchecks to perform on the backends.
   repeated Healthcheck healthcheck = 13;
 
-  // Use "one packet" load balancing
+  // Use "one packet" load balancing.
   optional bool one_packet = 14;
 }
 
@@ -195,21 +195,21 @@ message AccessGrant {
     GROUP = 2;
   }
 
-  // The user or group
+  // The user or group.
   required string grantee = 1;
 
-  // The Role granted to the grantee
+  // The Role granted to the grantee.
   required Role role = 2;
 
-  // The Type of AccessGrant
+  // The Type of AccessGrant.
   required Type type = 3;
 }
 
 message AccessGroup {
-  // The name of the group
+  // The name of the group.
   required string name = 1;
 
-  // The members of the group
+  // The members of the group.
   repeated string member = 2;
 }
 
@@ -220,7 +220,7 @@ message Vserver {
   // VIP hostname and IP(s).
   required Host entry_address = 2;
 
-  // Contact info for Responsible Party
+  // Contact info for Responsible Party.
   required string rp = 3;
 
   // Use firewall mark instead of individual service configurations.
