@@ -195,7 +195,7 @@ func (u User) String() string {
 	return s
 }
 
-// IsAdmin returns whether the user has administration rights.
+// IsAdmin returns whether the user has administrative rights.
 func (u User) IsAdmin() bool {
 	for _, g := range u.Groups {
 		if g == authGroupAdmin {
