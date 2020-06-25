@@ -179,6 +179,9 @@ func protoToCluster(p *pb.Cluster, clusterName string) (*Cluster, error) {
 	c.BGPLocalASN = uint32(p.GetBgpLocalAsn())
 	c.BGPRemoteASN = uint32(p.GetBgpRemoteAsn())
 
+	if err := addAccessGroups(c, p); err != nil {
+		return nil, err
+	}
 	if err := addBGPPeers(c, p); err != nil {
 		return nil, err
 	}
@@ -283,6 +286,20 @@ func protoToHost(p *pb.Host) seesaw.Host {
 		IPv6Addr: ipv6,
 		IPv6Mask: mask6,
 	}
+}
+
+func addAccessGroups(c *Cluster, p *pb.Cluster) error {
+	for _, p := range p.GetAccessGroups() {
+		group := &AccessGroup{
+			Name:    p.GetName(),
+			Members: p.GetMember(),
+		}
+		sort.Strings(group.Members)
+		if err := c.AddAccessGroup(group); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func addBGPPeers(c *Cluster, p *pb.Cluster) error {
@@ -522,6 +539,15 @@ func addVservers(c *Cluster, p *pb.Cluster) error {
 		}
 		for _, hc := range protosToHealthchecks(vs.Healthcheck, 0) {
 			if err := v.AddHealthcheck(hc); err != nil {
+				log.Warning(err)
+			}
+		}
+		for _, grant := range vs.AccessGrant {
+			g := &AccessGrant{
+				Grantee: grant.GetGrantee(),
+				IsGroup: grant.GetType() == pb.AccessGrant_GROUP,
+			}
+			if err := v.AddAccessGrant(g); err != nil {
 				log.Warning(err)
 			}
 		}

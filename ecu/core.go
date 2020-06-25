@@ -38,6 +38,7 @@ import (
 )
 
 var defaultConfig = Config{
+	Authenticator:  DefaultAuthenticator{},
 	CACertsFile:    path.Join(seesaw.ConfigPath, "ssl", "ca.crt"),
 	ControlAddress: ":10256",
 	ECUCertFile:    path.Join(seesaw.ConfigPath, "ssl", "seesaw.crt"),
@@ -49,6 +50,7 @@ var defaultConfig = Config{
 
 // Config provides configuration details for a Seesaw ECU.
 type Config struct {
+	Authenticator  Authenticator
 	CACertsFile    string
 	ControlAddress string
 	ECUCertFile    string
@@ -87,7 +89,7 @@ func New(cfg *Config) *ECU {
 
 // Run starts the ECU.
 func (e *ECU) Run() {
-	if err := e.authInit(); err != nil {
+	if err := e.cfg.Authenticator.AuthInit(); err != nil {
 		log.Warningf("Failed to initialise authentication, remote control will likely fail: %v", err)
 	}
 
