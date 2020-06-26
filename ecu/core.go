@@ -50,14 +50,15 @@ var defaultConfig = Config{
 
 // Config provides configuration details for a Seesaw ECU.
 type Config struct {
-	Authenticator  Authenticator
-	CACertsFile    string
-	ControlAddress string
-	ECUCertFile    string
-	ECUKeyFile     string
-	EngineSocket   string
-	MonitorAddress string
-	UpdateInterval time.Duration
+	Authenticator   Authenticator
+	CACertsFile     string
+	ControlAddress  string
+	ECUCertFile     string
+	ECUKeyFile      string
+	EngineSocket    string
+	MonitorAddress  string
+	StatsPublishers []Publisher
+	UpdateInterval  time.Duration
 }
 
 // DefaultConfig returns the default ECU configuration.
@@ -94,6 +95,7 @@ func (e *ECU) Run() {
 	}
 
 	stats := newECUStats(e)
+	stats.notify(e.cfg.StatsPublishers...)
 	go stats.run()
 
 	go e.control()
