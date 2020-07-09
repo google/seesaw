@@ -90,7 +90,7 @@ type Target struct {
 // String returns the string representation of a healthcheck target.
 func (t Target) String() string {
 	var via string
-	if t.Mode == seesaw.HCModeDSR {
+	if t.Mode != seesaw.HCModePlain {
 		via = fmt.Sprintf(" (via %s mark %d)", t.Host, t.Mark)
 	}
 	return fmt.Sprintf("%s %s%s", t.addr(), t.Mode, via)

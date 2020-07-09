@@ -49,13 +49,19 @@ type checkerKey struct {
 	cfg config.Healthcheck
 }
 
+// markKey is the unique key of the marks
+type markKey struct {
+	backend seesaw.IP
+	mode    seesaw.HealthcheckMode
+}
+
 // healthcheckManager manages the healthcheck configuration for a Seesaw Engine.
 type healthcheckManager struct {
 	engine *Engine
 	ncc    ncclient.NCC
 
 	markAlloc     *markAllocator
-	marks         map[seesaw.IP]uint32
+	marks         map[markKey]uint32
 	next          healthcheck.Id
 	vserverChecks map[string]map[CheckKey]*check // keyed by vserver name
 
@@ -74,7 +80,7 @@ type healthcheckManager struct {
 func newHealthcheckManager(e *Engine) *healthcheckManager {
 	return &healthcheckManager{
 		engine:        e,
-		marks:         make(map[seesaw.IP]uint32),
+		marks:         make(map[markKey]uint32),
 		markAlloc:     newMarkAllocator(dsrMarkBase, dsrMarkSize),
 		ncc:           e.ncc,
 		next:          healthcheck.Id((uint64(os.Getpid()) & 0xFFFF) << 48),
@@ -184,10 +190,10 @@ func (h *healthcheckManager) buildMaps() {
 }
 
 // dedup removes service related fields in a CheckKey which doesn't affect how a hc work.
-// Note that for DSR typed healthcheck, they are needed.
+// Note that for DSR or TUN typed healthcheck, they are needed.
 func dedup(key CheckKey) CheckKey {
 	key.Name = ""
-	if key.HealthcheckMode != seesaw.HCModeDSR {
+	if key.HealthcheckMode == seesaw.HCModePlain {
 		key.VserverIP = seesaw.IP{}
 		key.ServicePort = 0
 		key.ServiceProtocol = 0
@@ -243,12 +249,16 @@ func (h *healthcheckManager) newConfig(id healthcheck.Id, key CheckKey, hc *conf
 	port := int(hc.Port)
 	mark := 0
 
-	// For DSR we use the VIP address as the target and specify a mark for
-	// the backend.
+	// For DSR or TUN we use the VIP address as the target and specify a
+	// mark for the backend.
 	ip := host
-	if key.HealthcheckMode == seesaw.HCModeDSR {
+	if key.HealthcheckMode != seesaw.HCModePlain {
 		ip = key.VserverIP.IP()
-		mark = int(h.markBackend(key.BackendIP))
+		mkey := markKey{
+			backend: key.BackendIP,
+			mode:    key.HealthcheckMode,
+		}
+		mark = int(h.markBackend(mkey))
 	}
 
 	var checker healthcheck.Checker
@@ -303,9 +313,9 @@ func (h *healthcheckManager) newConfig(id healthcheck.Id, key CheckKey, hc *conf
 		}
 		checker = https
 	case seesaw.HCTypeICMP:
-		// DSR cannot be used with ICMP (at least for now).
+		// DSR or TUN cannot be used with ICMP (at least for now).
 		if key.HealthcheckMode != seesaw.HCModePlain {
-			return nil, errors.New("ICMP healthchecks cannot be used with DSR mode")
+			return nil, errors.New("ICMP healthchecks cannot be used with DSR or TUN mode")
 		}
 		ping := healthcheck.NewPingChecker(ip)
 		target = &ping.Target
@@ -387,10 +397,10 @@ func (h *healthcheckManager) expire() {
 	}
 }
 
-// markBackend returns a mark for the specified backend and sets up the IPVS
+// markBackend returns a mark for the specified key and sets up the IPVS
 // service entry if it does not exist.
-func (h *healthcheckManager) markBackend(backend seesaw.IP) uint32 {
-	mark, ok := h.marks[backend]
+func (h *healthcheckManager) markBackend(key markKey) uint32 {
+	mark, ok := h.marks[key]
 	if ok {
 		return mark
 	}
@@ -399,11 +409,16 @@ func (h *healthcheckManager) markBackend(backend seesaw.IP) uint32 {
 	if err != nil {
 		log.Fatalf("Failed to get mark: %v", err)
 	}
-	h.marks[backend] = mark
+	h.marks[key] = mark
 
 	ip := net.IPv6zero
-	if backend.AF() == seesaw.IPv4 {
+	if key.backend.AF() == seesaw.IPv4 {
 		ip = net.IPv4zero
+	}
+
+	flags := ipvs.DFForwardRoute
+	if key.mode == seesaw.HCModeTUN {
+		flags = ipvs.DFForwardTunnel
 	}
 
 	ipvsSvc := &ipvs.Service{
@@ -414,33 +429,38 @@ func (h *healthcheckManager) markBackend(backend seesaw.IP) uint32 {
 		FirewallMark: mark,
 		Destinations: []*ipvs.Destination{
 			{
-				Address: backend.IP(),
+				Address: key.backend.IP(),
 				Port:    0,
 				Weight:  1,
-				Flags:   ipvs.DFForwardRoute,
+				Flags:   flags,
 			},
 		},
 	}
 
-	log.Infof("Adding DSR IPVS service for %s (mark %d)", backend, mark)
+	log.Infof("Adding DSR/TUN IPVS service for %s (mark %d)", key.backend, mark)
 	if err := h.ncc.IPVSAddService(ipvsSvc); err != nil {
-		log.Fatalf("Failed to add IPVS service for DSR: %v", err)
+		log.Fatalf("Failed to add IPVS service for DSR/TUN: %v", err)
 	}
 
 	return mark
 }
 
-// unmarkBackend removes the mark for a given backend and removes the IPVS
+// unmarkBackend removes the mark for a given key and removes the IPVS
 // service entry if it exists.
-func (h *healthcheckManager) unmarkBackend(backend seesaw.IP) {
-	mark, ok := h.marks[backend]
+func (h *healthcheckManager) unmarkBackend(key markKey) {
+	mark, ok := h.marks[key]
 	if !ok {
 		return
 	}
 
 	ip := net.IPv6zero
-	if backend.AF() == seesaw.IPv4 {
+	if key.backend.AF() == seesaw.IPv4 {
 		ip = net.IPv4zero
+	}
+
+	flags := ipvs.DFForwardRoute
+	if key.mode == seesaw.HCModeTUN {
+		flags = ipvs.DFForwardTunnel
 	}
 
 	ipvsSvc := &ipvs.Service{
@@ -451,42 +471,46 @@ func (h *healthcheckManager) unmarkBackend(backend seesaw.IP) {
 		FirewallMark: mark,
 		Destinations: []*ipvs.Destination{
 			{
-				Address: backend.IP(),
+				Address: key.backend.IP(),
 				Port:    0,
 				Weight:  1,
-				Flags:   ipvs.DFForwardRoute,
+				Flags:   flags,
 			},
 		},
 	}
 
-	log.Infof("Removing DSR IPVS service for %s (mark %d)", backend, mark)
+	log.Infof("Removing DSR/TUN IPVS service for %s (mark %d)", key.backend, mark)
 	if err := h.ncc.IPVSDeleteService(ipvsSvc); err != nil {
-		log.Fatalf("Failed to remove DSR IPVS service: %v", err)
+		log.Fatalf("Failed to remove DSR/TUN IPVS service: %v", err)
 	}
 
-	delete(h.marks, backend)
+	delete(h.marks, key)
 	h.markAlloc.put(mark)
 }
 
-// pruneMarks unmarks backends that no longer have DSR healthchecks configured.
+// pruneMarks unmarks backends that no longer have DSR or TUN healthchecks configured.
 func (h *healthcheckManager) pruneMarks() {
 	h.lock.RLock()
 	checks := h.checks
 	h.lock.RUnlock()
 
-	backends := make(map[seesaw.IP]bool)
+	backends := make(map[markKey]bool)
 	for _, checkList := range checks {
 		for _, check := range checkList {
-			if check.key.HealthcheckMode != seesaw.HCModeDSR {
+			if check.key.HealthcheckMode == seesaw.HCModePlain {
 				continue
 			}
-			backends[check.key.BackendIP] = true
-		}
-
-		for ip := range h.marks {
-			if _, ok := backends[ip]; !ok {
-				h.unmarkBackend(ip)
+			mkey := markKey{
+				backend: check.key.BackendIP,
+				mode:    check.key.HealthcheckMode,
 			}
+			backends[mkey] = true
+		}
+	}
+
+	for mkey := range h.marks {
+		if _, ok := backends[mkey]; !ok {
+			h.unmarkBackend(mkey)
 		}
 	}
 }
