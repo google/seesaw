@@ -404,14 +404,10 @@ var hcUpdateTests = []struct {
 	expected []checkerKey
 }{
 	{
-		desc: "initial healthchecks",
+		desc: "initial healthchecks - same healthcheck different CheckKey",
 		checks: map[CheckKey]*check{
-			hcUpdateCheckKey1: {
-				healthcheck: &hcUpdateHealthcheck1,
-			},
-			hcUpdateCheckKey2: {
-				healthcheck: &hcUpdateHealthcheck1,
-			},
+			hcUpdateCheckKey1: newCheck(hcUpdateCheckKey1, nil, &hcUpdateHealthcheck1),
+			hcUpdateCheckKey2: newCheck(hcUpdateCheckKey2, nil, &hcUpdateHealthcheck1),
 		},
 		expected: []checkerKey{
 			makeCheckerKey(hcUpdateCheckKey1, &hcUpdateHealthcheck1),
@@ -421,12 +417,8 @@ var hcUpdateTests = []struct {
 	{
 		desc: "change of healthcheck type/port",
 		checks: map[CheckKey]*check{
-			hcUpdateCheckKey3: {
-				healthcheck: &hcUpdateHealthcheck2,
-			},
-			hcUpdateCheckKey4: {
-				healthcheck: &hcUpdateHealthcheck2,
-			},
+			hcUpdateCheckKey3: newCheck(hcUpdateCheckKey3, nil, &hcUpdateHealthcheck2),
+			hcUpdateCheckKey4: newCheck(hcUpdateCheckKey4, nil, &hcUpdateHealthcheck2),
 		},
 		expected: []checkerKey{
 			makeCheckerKey(hcUpdateCheckKey3, &hcUpdateHealthcheck2),
@@ -436,12 +428,8 @@ var hcUpdateTests = []struct {
 	{
 		desc: "change to healthcheck configuration",
 		checks: map[CheckKey]*check{
-			hcUpdateCheckKey3: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
-			hcUpdateCheckKey4: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
+			hcUpdateCheckKey3: newCheck(hcUpdateCheckKey3, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey4: newCheck(hcUpdateCheckKey4, nil, &hcUpdateHealthcheck3),
 		},
 		expected: []checkerKey{
 			makeCheckerKey(hcUpdateCheckKey3, &hcUpdateHealthcheck3),
@@ -449,17 +437,11 @@ var hcUpdateTests = []struct {
 		},
 	},
 	{
-		desc: "healthcheck dedup",
+		desc: "same backend IP with different vserver IP will be deduped",
 		checks: map[CheckKey]*check{
-			hcUpdateCheckKey3: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
-			hcUpdateCheckKey4: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
-			hcUpdateCheckKey5: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
+			hcUpdateCheckKey3: newCheck(hcUpdateCheckKey3, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey4: newCheck(hcUpdateCheckKey4, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey5: newCheck(hcUpdateCheckKey5, nil, &hcUpdateHealthcheck3),
 		},
 		expected: []checkerKey{
 			makeCheckerKey(hcUpdateCheckKey3, &hcUpdateHealthcheck3),
