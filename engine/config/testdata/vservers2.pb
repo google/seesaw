@@ -18,4 +18,21 @@ vserver <
     scheduler: MH
     mode: TUN
   >
+  backend: <
+    host: <
+      fqdn: "gateway1-1.example.com."
+      ipv4: "192.168.36.2/26"
+      status: PRODUCTION
+    >
+    weight: 5
+  >
+  healthcheck <
+    type: HTTP
+    port: 8001
+    send: "/healthz"
+    receive: "Ok"
+    code: 200
+    tls_verify: false
+    mode: TUN
+  >
 >

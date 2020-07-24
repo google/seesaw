@@ -110,8 +110,8 @@ func (hc *HTTPChecker) Check(timeout time.Duration) *Result {
 
 	var dialer func(network, addr string) (net.Conn, error)
 
-	// DSR mode requires socket marks
-	if hc.Mode == seesaw.HCModeDSR {
+	// Both DSR and TUN mode requires socket marks
+	if hc.Mode != seesaw.HCModePlain {
 		conn, err := dialTCP(hc.network(), hc.addr(), timeout, hc.Mark)
 		if err != nil {
 			return complete(start, "", false, err)

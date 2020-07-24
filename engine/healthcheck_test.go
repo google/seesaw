@@ -354,6 +354,26 @@ var (
 		16767,
 		"HTTP/16767_0",
 	}
+	hcUpdateCheckKey6 = CheckKey{
+		seesaw.ParseIP("192.168.36.2"),
+		seesaw.ParseIP("192.168.37.2"),
+		53,
+		seesaw.IPProtoUDP,
+		seesaw.HCModeDSR,
+		seesaw.HCTypeHTTPS,
+		16767,
+		"HTTP/16767_0",
+	}
+	hcUpdateCheckKey7 = CheckKey{
+		seesaw.ParseIP("192.168.36.2"),
+		seesaw.ParseIP("192.168.37.3"),
+		53,
+		seesaw.IPProtoUDP,
+		seesaw.HCModeTUN,
+		seesaw.HCTypeHTTPS,
+		16767,
+		"HTTP/16767_0",
+	}
 
 	hcUpdateHealthcheck1 = config.Healthcheck{
 		Name:      "DNS/53_0",
@@ -404,14 +424,10 @@ var hcUpdateTests = []struct {
 	expected []checkerKey
 }{
 	{
-		desc: "initial healthchecks",
+		desc: "initial healthchecks - same healthcheck different CheckKey",
 		checks: map[CheckKey]*check{
-			hcUpdateCheckKey1: {
-				healthcheck: &hcUpdateHealthcheck1,
-			},
-			hcUpdateCheckKey2: {
-				healthcheck: &hcUpdateHealthcheck1,
-			},
+			hcUpdateCheckKey1: newCheck(hcUpdateCheckKey1, nil, &hcUpdateHealthcheck1),
+			hcUpdateCheckKey2: newCheck(hcUpdateCheckKey2, nil, &hcUpdateHealthcheck1),
 		},
 		expected: []checkerKey{
 			makeCheckerKey(hcUpdateCheckKey1, &hcUpdateHealthcheck1),
@@ -421,12 +437,8 @@ var hcUpdateTests = []struct {
 	{
 		desc: "change of healthcheck type/port",
 		checks: map[CheckKey]*check{
-			hcUpdateCheckKey3: {
-				healthcheck: &hcUpdateHealthcheck2,
-			},
-			hcUpdateCheckKey4: {
-				healthcheck: &hcUpdateHealthcheck2,
-			},
+			hcUpdateCheckKey3: newCheck(hcUpdateCheckKey3, nil, &hcUpdateHealthcheck2),
+			hcUpdateCheckKey4: newCheck(hcUpdateCheckKey4, nil, &hcUpdateHealthcheck2),
 		},
 		expected: []checkerKey{
 			makeCheckerKey(hcUpdateCheckKey3, &hcUpdateHealthcheck2),
@@ -436,12 +448,8 @@ var hcUpdateTests = []struct {
 	{
 		desc: "change to healthcheck configuration",
 		checks: map[CheckKey]*check{
-			hcUpdateCheckKey3: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
-			hcUpdateCheckKey4: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
+			hcUpdateCheckKey3: newCheck(hcUpdateCheckKey3, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey4: newCheck(hcUpdateCheckKey4, nil, &hcUpdateHealthcheck3),
 		},
 		expected: []checkerKey{
 			makeCheckerKey(hcUpdateCheckKey3, &hcUpdateHealthcheck3),
@@ -449,21 +457,30 @@ var hcUpdateTests = []struct {
 		},
 	},
 	{
-		desc: "healthcheck dedup",
+		desc: "same backend IP with different vserver IP will be deduped",
 		checks: map[CheckKey]*check{
-			hcUpdateCheckKey3: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
-			hcUpdateCheckKey4: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
-			hcUpdateCheckKey5: {
-				healthcheck: &hcUpdateHealthcheck3,
-			},
+			hcUpdateCheckKey3: newCheck(hcUpdateCheckKey3, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey4: newCheck(hcUpdateCheckKey4, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey5: newCheck(hcUpdateCheckKey5, nil, &hcUpdateHealthcheck3),
 		},
 		expected: []checkerKey{
 			makeCheckerKey(hcUpdateCheckKey3, &hcUpdateHealthcheck3),
 			makeCheckerKey(hcUpdateCheckKey4, &hcUpdateHealthcheck3),
+		},
+	},
+	{
+		desc: "no VserverIP dedup for DSR or TUN mode healthcheck",
+		checks: map[CheckKey]*check{
+			hcUpdateCheckKey3: newCheck(hcUpdateCheckKey3, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey4: newCheck(hcUpdateCheckKey4, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey6: newCheck(hcUpdateCheckKey6, nil, &hcUpdateHealthcheck3),
+			hcUpdateCheckKey7: newCheck(hcUpdateCheckKey7, nil, &hcUpdateHealthcheck3),
+		},
+		expected: []checkerKey{
+			makeCheckerKey(hcUpdateCheckKey3, &hcUpdateHealthcheck3),
+			makeCheckerKey(hcUpdateCheckKey4, &hcUpdateHealthcheck3),
+			makeCheckerKey(hcUpdateCheckKey6, &hcUpdateHealthcheck3),
+			makeCheckerKey(hcUpdateCheckKey7, &hcUpdateHealthcheck3),
 		},
 	},
 
@@ -494,6 +511,7 @@ func TestHealthcheckUpdates(t *testing.T) {
 		}
 
 		// Find the healthcheck ID and compare the configuration.
+		expectedMarks := 0
 		for _, key := range test.expected {
 			id, ok := hcm.ids[key]
 			if !ok {
@@ -512,6 +530,15 @@ func TestHealthcheckUpdates(t *testing.T) {
 				}
 			}
 
+			if key.key.HealthcheckMode != seesaw.HCModePlain {
+				expectedMarks++
+			}
+
+		}
+
+		// Validate the number of marks for non-plain mode healthcheck
+		if len(hcm.marks) != expectedMarks {
+			t.Errorf("%q: got %d marks, want %d", test.desc, len(hcm.marks), expectedMarks)
 		}
 	}
 }
