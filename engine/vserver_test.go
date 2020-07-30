@@ -28,6 +28,7 @@ import (
 	"github.com/google/seesaw/common/seesaw"
 	"github.com/google/seesaw/engine/config"
 	"github.com/google/seesaw/healthcheck"
+	ncclient "github.com/google/seesaw/ncc/client"
 	"github.com/kylelemons/godebug/pretty"
 
 	log "github.com/golang/glog"
@@ -1779,7 +1780,7 @@ func TestUpdateVserver(t *testing.T) {
 func TestReIPVserver(t *testing.T) {
 	e := newTestEngine()
 	vserver := newTestVserver(e)
-	lbIF := e.lbInterface.(*dummyLBInterface)
+	lbIF := e.lbInterface.(*ncclient.DummyLBInterface)
 	clusterName := "au-syd"
 	serviceName := "dns.resolver@au-syd"
 	tests := []struct {
@@ -1846,7 +1847,7 @@ func TestReIPVserver(t *testing.T) {
 		}
 
 		gotIFIPs := make(map[string]bool)
-		for v := range lbIF.vips {
+		for v := range lbIF.Vips {
 			gotIFIPs[v.IP.String()] = true
 		}
 		if diff := pretty.Compare(wantVIPs, gotIFIPs); diff != "" {
