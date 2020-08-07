@@ -16,14 +16,23 @@ echo "IMAGE_VERSION=$IMAGE_VERSION"
 cat >> /etc/cloud/build.info <<EOF
 gke_on_prem_version: $IMAGE_VERSION
 EOF
-apt-get update -y
-apt-get install -y \
+
+# Prevent interactive questions on package installation and upgrades
+export DEBIAN_FRONTEND=noninteractive
+APT_OPTIONS="-o Dpkg::Options::=--force-confdef"
+APT_OPTIONS="$APT_OPTIONS -o Dpkg::Options::=--force-confold"
+
+apt-get update -y $APT_OPTIONS
+apt-get install -y $APT_OPTIONS \
   arping \
   cloud-utils \
   conntrack \
   logrotate \
   prips \
-  systemd-container
+  systemd-container \
+  libnl-3-dev \
+  libnl-genl-3-dev \
+  ipvsadm
 
 # Disable swap otherwise kubelet won't run.
 sed -i '/ swap / s/^/#/' /etc/fstab
@@ -34,12 +43,6 @@ systemctl disable systemd-networkd-wait-online.service
 mkdir -p /etc/kubernetes/pki
 # logrotate by default uses syslog group which doesn't exist in our image.
 sed -i 's/^su root syslog/su root adm/' /etc/logrotate.conf
-
-# prepare Seesaw environment
-apt-get install -y \
-  libnl-3-dev \
-  libnl-genl-3-dev \
-  ipvsadm \
 
 # Seesaw requires a dummy interface
 cat > /etc/systemd/network/10-dummy0.netdev <<EOF
