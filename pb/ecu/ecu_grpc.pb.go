@@ -33,7 +33,7 @@ func NewSeesawECUClient(cc grpc.ClientConnInterface) SeesawECUClient {
 
 func (c *seesawECUClient) Failover(ctx context.Context, in *FailoverRequest, opts ...grpc.CallOption) (*FailoverResponse, error) {
 	out := new(FailoverResponse)
-	err := c.cc.Invoke(ctx, "/SeesawECU/Failover", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ecu.SeesawECU/Failover", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *seesawECUClient) Failover(ctx context.Context, in *FailoverRequest, opt
 
 func (c *seesawECUClient) GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*SeesawStats, error) {
 	out := new(SeesawStats)
-	err := c.cc.Invoke(ctx, "/SeesawECU/GetStats", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ecu.SeesawECU/GetStats", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func _SeesawECU_Failover_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/SeesawECU/Failover",
+		FullMethod: "/ecu.SeesawECU/Failover",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SeesawECUServer).Failover(ctx, req.(*FailoverRequest))
@@ -104,7 +104,7 @@ func _SeesawECU_GetStats_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/SeesawECU/GetStats",
+		FullMethod: "/ecu.SeesawECU/GetStats",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SeesawECUServer).GetStats(ctx, req.(*GetStatsRequest))
@@ -113,7 +113,7 @@ func _SeesawECU_GetStats_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 var _SeesawECU_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "SeesawECU",
+	ServiceName: "ecu.SeesawECU",
 	HandlerType: (*SeesawECUServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

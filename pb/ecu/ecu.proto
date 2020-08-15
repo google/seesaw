@@ -2,6 +2,10 @@ syntax = "proto3";
 
 option go_package = "github.com/google/seesaw/pb/ecu";
 
+// package is necessary to tell grpc to generate a service name with package
+// name.
+package ecu;
+
 // The SeesawECU service definition
 service SeesawECU {
   // Calling Failover() on any of the LB instance triggers a switch of master.
