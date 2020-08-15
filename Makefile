@@ -19,7 +19,7 @@ install-test-tools: all
 
 proto:
 	cd pb/config; protoc --go_out=paths=source_relative:. config.proto
-	cd pb/ecu; protoc --go-grpc_out=paths=source_relative:. ecu.proto
+	cd pb/ecu; protoc --go_out=paths=source_relative:. --go-grpc_out=paths=source_relative:. ecu.proto
 
 test: all
 	go test ./...

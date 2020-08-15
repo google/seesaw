@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ecu;
+option go_package = "github.com/google/seesaw/pb/ecu";
 
 // The SeesawECU service definition
 service SeesawECU {

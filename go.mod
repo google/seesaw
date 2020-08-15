@@ -13,7 +13,7 @@ require (
 	github.com/prometheus/common v0.7.0
 	github.com/prometheus/procfs v0.0.8
 	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876
-	google.golang.org/grpc v1.26.0
+	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.23.0
 	gopkg.in/fsnotify.v1 v1.4.7
 )

@@ -16,6 +16,7 @@ import (
 )
 
 type controlServer struct {
+	ecupb.UnimplementedSeesawECUServer
 	engineSocket string
 	sc           *statsCache
 }
