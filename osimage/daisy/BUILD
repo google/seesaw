@@ -7,6 +7,8 @@ OVERLAY_FILES = {
     "scripts/provision-script.sh": "run/provision-script.sh",
     # Configure ARP notify
     "etc_sysctl_d_80-arp-notify_conf": "etc/sysctl.d/80-arp-notify.conf",
+    # Enable sloppy-tcp for maglev hashing
+    "etc_sysctl_d_81-sloppy-tcp_conf": "etc/sysctl.d/81-sloppy-tcp.conf",
     # Configure toolbox.
     "etc_default_toolbox": "etc/default/toolbox",
     # From: extract_toolbox
