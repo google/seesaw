@@ -1,0 +1,62 @@
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+# Most artifacts are stored here:
+GKE_ON_PREM_BUCKET = "gs://gke-on-prem-staging"
+# Original Canonical OVAs are stored here:
+GKE_ON_PREM_OS_UBUNTU_SOURCE_BUCKET = "gs://gke-on-prem-os-ubuntu-source"
+# GKE Kubernetes releases are stored here:
+K8S_RELEASE_BUCKET = "gs://kubernetes-release-gke"
+# bazel-skylib 0.8.0 released 2019.03.20 (https://github.com/bazelbuild/bazel-skylib/releases/tag/0.8.0)
+skylib_version = "0.8.0"
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "2ef429f5d7ce7111263289644d233707dba35e39696377ebab8b0bc701f7818e",
+    type = "tar.gz",
+    url = "https://github.com/bazelbuild/bazel-skylib/releases/download/{}/bazel-skylib.{}.tar.gz".format(skylib_version, skylib_version),
+)
+http_archive(
+    name = "bazel_toolchains",
+    sha256 = "109a99384f9d08f9e75136d218ebaebc68cc810c56897aea2224c57932052d30",
+    strip_prefix = "bazel-toolchains-94d31935a2c94fe7e7c7379a0f3393e181928ff7",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/94d31935a2c94fe7e7c7379a0f3393e181928ff7.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/94d31935a2c94fe7e7c7379a0f3393e181928ff7.tar.gz",
+    ],
+)
+# Download the rules_docker repository at release v0.8.1
+http_archive(
+    name = "io_bazel_rules_docker",
+    sha256 = "87fc6a2b128147a0a3039a2fd0b53cc1f2ed5adb8716f50756544a572999ae9a",
+    strip_prefix = "rules_docker-0.8.1",
+    urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.8.1.tar.gz"],
+)
+load(
+    "@io_bazel_rules_docker//repositories:repositories.bzl",
+    container_repositories = "repositories",
+)
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    "container_pull",
+)
+load("@bazel_toolchains//rules:gcs.bzl", "gcs_file")
+container_repositories()
+gcs_file(
+    name = "toolbox",
+    bucket = GKE_ON_PREM_BUCKET,
+    downloaded_file_path = "toolbox-v0.0.1.tgz",
+    file = "toolbox/v0.0.1/toolbox-v0.0.1.tgz",
+    sha256 = "886d3536852aeb7a5cbac3535d84771c9cde2ad2645e720a28bcfea625fdf935",
+)
+
+container_pull(
+    name = "pause_amd64",
+    digest = "sha256:f350203fb84ec21cd118b2875b3824f004ee297bd4be88b7f29055c38709c21c",
+    registry = "gcr.io",
+    repository = "gke-on-prem-release/pause-amd64",
+)
+
+container_pull(
+    name = "debug_toolbox",
+    digest = "sha256:bfd41d7746e43d4f1c4b70270db533f6b50a0cdee14b30b12370b96bd8d5a107",
+    registry = "gcr.io",
+    repository = "gke-on-prem-staging/debug-toolbox",
+)

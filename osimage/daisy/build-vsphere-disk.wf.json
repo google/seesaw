@@ -1,0 +1,141 @@
+{
+  "Name": "build-vsphere-disk",
+  "Vars": {
+    "image_version": {
+      "Required": true,
+      "Description": "Image version to embed into /etc/cloud/build.info"
+    },
+    "worker_image": "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts",
+    "guest_base_image": "projects/gke-on-prem-staging/global/images/ubuntu-gke-onprem-1804-1-17-v20200908",
+    "service_account": "compute-osimage-builder@louhi-qa.iam.gserviceaccount.com",
+    "target_image_size": "10",
+    "target_image_name": "image",
+    "source_path": "blaze-bin/daisy/",
+    "startup_script": "../../startup-scripts/vsphere-bootstrap-ubuntu.sh",
+    "build_gcspath": ""
+  },
+  "Sources": {
+    "startup-script.sh": "${startup_script}",
+    "overlay.tar": "${source_path}overlay.tar",
+    "builddeps.tar": "${source_path}builddeps.tar"
+  },
+  "Steps": {
+    "disks": {
+      "CreateDisks": [
+        {
+          "Name": "worker-disk",
+          "SourceImage": "${worker_image}"
+        },
+        {
+          "Name": "target-disk",
+	  "SizeGb": "${target_image_size}",
+          "SourceImage": "${guest_base_image}"
+        }
+      ]
+    },
+    "instances": {
+      "CreateInstances": [
+        {
+          "Name": "worker-instance",
+          "Disks": [
+            {
+              "Source": "worker-disk"
+            }
+          ],
+          "StartupScript": "startup-script.sh",
+          "ServiceAccounts": [
+            {
+              "email": "${service_account}",
+              "scopes": [
+                "https://www.googleapis.com/auth/devstorage.read_write"
+              ]
+            }
+          ],
+          "Metadata": {
+            "target-image-name": "${target_image_name}",
+            "image-version": "${image_version}"
+          }
+        }
+      ]
+    },
+    "wait-for-boot": {
+      "Timeout": "10m",
+      "WaitForInstancesSignal": [
+        {
+          "Name": "worker-instance",
+          "SerialOutput": {
+            "Port": 1,
+            "SuccessMatch": "Ready for disk.",
+            "FailureMatch": "BuildFailed:"
+          }
+        }
+      ]
+    },
+    "attach-target-disk": {
+      "AttachDisks": [
+        {
+          "Source": "target-disk",
+          "Instance": "worker-instance"
+        }
+      ]
+    },
+    "wait-for-provision-target-disk": {
+      "Timeout": "30m",
+      "WaitForInstancesSignal": [
+        {
+          "Name": "worker-instance",
+          "SerialOutput": {
+            "Port": 1,
+            "SuccessMatch": "BuildComplete:",
+            "FailureMatch": "BuildFailed:",
+            "StatusMatch": "BuildStatus:"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "DeleteResources": {
+        "Instances": [
+          "worker-instance"
+        ]
+      }
+    },
+    "copy-artifacts": {
+      "CopyGCSObjects": [
+        {
+          "Source": "${OUTSPATH}/${target_image_name}.vmdk",
+          "Destination": "${build_gcspath}/${target_image_name}.vmdk"
+        },
+        {
+          "Source": "${OUTSPATH}/${target_image_name}.manifest",
+          "Destination": "${build_gcspath}/${target_image_name}.manifest"
+        },
+        {
+          "Source": "${OUTSPATH}/${target_image_name}.tar.gz",
+          "Destination": "${build_gcspath}/${target_image_name}.tar.gz"
+        }
+      ]
+    }
+  },
+  "Dependencies": {
+    "instances": [
+      "disks"
+    ],
+    "wait-for-boot": [
+      "instances"
+    ],
+    "attach-target-disk": [
+      "wait-for-boot"
+    ],
+    "wait-for-provision-target-disk": [
+      "attach-target-disk"
+    ],
+    "copy-artifacts": [
+      "wait-for-provision-target-disk"
+    ],
+    "delete": [
+      "wait-for-provision-target-disk"
+    ]
+  }
+
+}
