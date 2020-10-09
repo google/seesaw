@@ -60,3 +60,11 @@ container_pull(
     registry = "gcr.io",
     repository = "gke-on-prem-staging/debug-toolbox",
 )
+
+container_pull(
+    name = "fluent-bit",
+    # v1.6.0-gke.0
+    digest = "sha256:c1dbc1c38ccdfa4c9e975d4f722a1bfb3ae083aea476994a639dbf64a3c59a9f",
+    registry = "gcr.io",
+    repository = "gke-on-prem-staging/fluent-bit",
+)
