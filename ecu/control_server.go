@@ -3,22 +3,34 @@ package ecu
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/google/seesaw/common/conn"
 	"github.com/google/seesaw/common/ipc"
 	"github.com/google/seesaw/common/seesaw"
 
+	log "github.com/golang/glog"
 	ecupb "github.com/google/seesaw/pb/ecu"
 	spb "github.com/google/seesaw/pb/seesaw"
+)
+
+const (
+	fluentBitDir   = "/etc/fluent-bit/"
+	systemdService = "docker.fluent-bit.service"
 )
 
 type controlServer struct {
 	ecupb.UnimplementedSeesawECUServer
 	engineSocket string
 	sc           *statsCache
+
+	mu sync.Mutex
 }
 
 func newControlServer(engineSocket string, sc *statsCache) *controlServer {
@@ -183,5 +195,82 @@ func (c *controlServer) GetStats(ctx context.Context, in *ecupb.GetStatsRequest)
 		Reason:  reason,
 	}
 
+	cmd := exec.Command("systemctl", "is-active", systemdService)
+	if err := cmd.Run(); err != nil {
+		out.FluentBitError = fmt.Sprintf("%q is not active right now.", systemdService)
+
+		// For debugging purpose, log status
+		cmd = exec.Command("systemctl", "status", systemdService)
+		stdouterr, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Errorf("%q failed: %v\n%s", cmd.String(), err, stdouterr)
+		} else {
+			log.Errorf("%q:\n%s", cmd.String(), stdouterr)
+		}
+	}
 	return out, nil
+}
+
+func createOrUpdateFile(fp, content string) (bool, error) {
+	old, err := ioutil.ReadFile(fp)
+	if !os.IsNotExist(err) {
+		if err != nil {
+			return false, fmt.Errorf("failed to read %q: %v", fp, err)
+		}
+		if string(old) == content {
+			return false, nil
+		}
+	}
+
+	if err := ioutil.WriteFile(fp, []byte(content), 0644); err != nil {
+		return false, fmt.Errorf("failed to update %q: %v", fp, err)
+	}
+	return true, nil
+}
+
+// UpdateFluentBit implements SeesawECU.UpdateFluentBit
+func (c *controlServer) UpdateFluentBit(ctx context.Context, in *ecupb.UpdateFluentBitRequest) (*ecupb.UpdateFluentBitResponse, error) {
+	// What we do in this function must be serialized.
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	var updated bool
+
+	up, err := createOrUpdateFile(filepath.Join(fluentBitDir, "fluent-bit.conf"), in.GetFluentBitCfg())
+	if err != nil {
+		return nil, err
+	}
+	if up {
+		updated = true
+	}
+	up, err = createOrUpdateFile(filepath.Join(fluentBitDir, "proxy.env"), in.GetProxyEnv())
+	if err != nil {
+		return nil, err
+	}
+	if up {
+		updated = true
+	}
+	up, err = createOrUpdateFile(filepath.Join(fluentBitDir, "service_account_key.json"), in.GetSaKey())
+	if err != nil {
+		return nil, err
+	}
+	if up {
+		updated = true
+	}
+
+	if !updated {
+		return &ecupb.UpdateFluentBitResponse{}, nil
+	}
+
+	cmd := exec.Command("systemctl", "is-active", systemdService)
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("%s is not active right now. Not restarting the service.", systemdService)
+	}
+	cmd = exec.Command("systemctl", "restart", systemdService)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Errorf("%q failed: %v\n%s", cmd.String(), err, out)
+		return nil, fmt.Errorf("unable to restart %q: %v", systemdService, err)
+	}
+	return &ecupb.UpdateFluentBitResponse{}, nil
 }

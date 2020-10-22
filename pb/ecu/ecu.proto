@@ -13,6 +13,9 @@ service SeesawECU {
 
   // Returns SeesawStats.
   rpc GetStats(GetStatsRequest) returns(SeesawStats) {}
+
+  // Updates fluent-bit configuration and restarts it if needed.
+  rpc UpdateFluentBit(UpdateFluentBitRequest) returns(UpdateFluentBitResponse) {}
 }
 
 // Request for failover.
@@ -41,6 +44,8 @@ message SeesawStats {
 
    // If current instance is ready to serve traffic.
   Readiness readiness = 3;
+
+  string fluent_bit_error = 4;
 }
 
 message Readiness {
@@ -50,3 +55,12 @@ message Readiness {
   // For logging and debugging purpose.
   string reason = 2;
 }
+
+// UpdateFluentBitRequest holds raw file contents of configs related to fluent-bit.
+message UpdateFluentBitRequest {
+  string fluent_bit_cfg = 1;
+  string sa_key = 2;
+  string proxy_env = 3;
+}
+
+message UpdateFluentBitResponse {}

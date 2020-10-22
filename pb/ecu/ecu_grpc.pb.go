@@ -21,6 +21,8 @@ type SeesawECUClient interface {
 	Failover(ctx context.Context, in *FailoverRequest, opts ...grpc.CallOption) (*FailoverResponse, error)
 	// Returns SeesawStats.
 	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*SeesawStats, error)
+	// Updates fluent-bit configuration and restarts it if needed.
+	UpdateFluentBit(ctx context.Context, in *UpdateFluentBitRequest, opts ...grpc.CallOption) (*UpdateFluentBitResponse, error)
 }
 
 type seesawECUClient struct {
@@ -49,6 +51,15 @@ func (c *seesawECUClient) GetStats(ctx context.Context, in *GetStatsRequest, opt
 	return out, nil
 }
 
+func (c *seesawECUClient) UpdateFluentBit(ctx context.Context, in *UpdateFluentBitRequest, opts ...grpc.CallOption) (*UpdateFluentBitResponse, error) {
+	out := new(UpdateFluentBitResponse)
+	err := c.cc.Invoke(ctx, "/ecu.SeesawECU/UpdateFluentBit", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SeesawECUServer is the server API for SeesawECU service.
 // All implementations must embed UnimplementedSeesawECUServer
 // for forward compatibility
@@ -57,6 +68,8 @@ type SeesawECUServer interface {
 	Failover(context.Context, *FailoverRequest) (*FailoverResponse, error)
 	// Returns SeesawStats.
 	GetStats(context.Context, *GetStatsRequest) (*SeesawStats, error)
+	// Updates fluent-bit configuration and restarts it if needed.
+	UpdateFluentBit(context.Context, *UpdateFluentBitRequest) (*UpdateFluentBitResponse, error)
 	mustEmbedUnimplementedSeesawECUServer()
 }
 
@@ -69,6 +82,9 @@ func (*UnimplementedSeesawECUServer) Failover(context.Context, *FailoverRequest)
 }
 func (*UnimplementedSeesawECUServer) GetStats(context.Context, *GetStatsRequest) (*SeesawStats, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
+}
+func (*UnimplementedSeesawECUServer) UpdateFluentBit(context.Context, *UpdateFluentBitRequest) (*UpdateFluentBitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateFluentBit not implemented")
 }
 func (*UnimplementedSeesawECUServer) mustEmbedUnimplementedSeesawECUServer() {}
 
@@ -112,6 +128,24 @@ func _SeesawECU_GetStats_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SeesawECU_UpdateFluentBit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateFluentBitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SeesawECUServer).UpdateFluentBit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ecu.SeesawECU/UpdateFluentBit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SeesawECUServer).UpdateFluentBit(ctx, req.(*UpdateFluentBitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _SeesawECU_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "ecu.SeesawECU",
 	HandlerType: (*SeesawECUServer)(nil),
@@ -123,6 +157,10 @@ var _SeesawECU_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetStats",
 			Handler:    _SeesawECU_GetStats_Handler,
+		},
+		{
+			MethodName: "UpdateFluentBit",
+			Handler:    _SeesawECU_UpdateFluentBit_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
