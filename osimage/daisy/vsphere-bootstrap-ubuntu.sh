@@ -54,6 +54,14 @@ prepare_host_packages() {
 
   env DEBIAN_FRONTEND=noninteractive apt-get install -y \
     qemu-utils
+
+  # udev will try to read and mount partitions as we are writing them.
+  # This prevents udev from watching sdb, the rootfs_disk.
+  # https://lists.freedesktop.org/archives/systemd-devel/2017-October/039615.html
+  cat > /etc/udev/rules.d/61-no-watch-sdb.rules <<EOF
+ACTION!="remove", SUBSYSTEM=="block", KERNEL=="sdb*", OPTIONS:="nowatch"
+EOF
+  udevadm control --reload-rules
 }
 
 prepare_chroot() {
