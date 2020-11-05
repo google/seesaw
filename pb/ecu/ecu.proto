@@ -24,7 +24,10 @@ message FailoverRequest {}
 // Response for failover.
 message FailoverResponse {}
 
-message GetStatsRequest {}
+message GetStatsRequest {
+  // If stackdriver is enabled, it will check the status of fluent-bit
+  bool stackdriver_enabled = 1;
+}
 
 // SeesawStats includes stats that are interested by syllogi.
 message SeesawStats {

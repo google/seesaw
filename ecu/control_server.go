@@ -195,17 +195,19 @@ func (c *controlServer) GetStats(ctx context.Context, in *ecupb.GetStatsRequest)
 		Reason:  reason,
 	}
 
-	cmd := exec.Command("systemctl", "is-active", systemdService)
-	if err := cmd.Run(); err != nil {
-		out.FluentBitError = fmt.Sprintf("%q is not active right now.", systemdService)
+	if in.StackdriverEnabled {
+		cmd := exec.Command("systemctl", "is-active", systemdService)
+		if err := cmd.Run(); err != nil {
+			out.FluentBitError = fmt.Sprintf("%q is not active right now.", systemdService)
 
-		// For debugging purpose, log status
-		cmd = exec.Command("systemctl", "status", systemdService)
-		stdouterr, err := cmd.CombinedOutput()
-		if err != nil {
-			log.Errorf("%q failed: %v\n%s", cmd.String(), err, stdouterr)
-		} else {
-			log.Errorf("%q:\n%s", cmd.String(), stdouterr)
+			// For debugging purpose, log status
+			cmd = exec.Command("systemctl", "status", systemdService)
+			stdouterr, err := cmd.CombinedOutput()
+			if err != nil {
+				log.Errorf("%q failed: %v\n%s", cmd.String(), err, stdouterr)
+			} else {
+				log.Errorf("%q:\n%s", cmd.String(), stdouterr)
+			}
 		}
 	}
 	return out, nil
