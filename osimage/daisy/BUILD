@@ -48,7 +48,7 @@ container_bundle(
     name = "containers",
     images = {
         "gcr.io/gke-on-prem-release/debug-toolbox:v0.0.7": "@debug_toolbox//image",
-        "gcr.io/gke-on-prem-release/fluent-bit:v1.6.0-gke.0": "@fluent-bit//image",
+        "gcr.io/gke-on-prem-release/fluent-bit:v1.6.4-gke.0": "@fluent-bit//image",
     },
 )
 

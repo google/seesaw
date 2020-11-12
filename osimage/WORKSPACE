@@ -63,8 +63,8 @@ container_pull(
 
 container_pull(
     name = "fluent-bit",
-    # v1.6.0-gke.0
-    digest = "sha256:c1dbc1c38ccdfa4c9e975d4f722a1bfb3ae083aea476994a639dbf64a3c59a9f",
+    # v1.6.4-gke.0
+    digest = "sha256:2ccfe04120e242b55c27c09929571a7db2c2cdfc723d267e6e40ce3ea2764eeb",
     registry = "gcr.io",
     repository = "gke-on-prem-staging/fluent-bit",
 )
