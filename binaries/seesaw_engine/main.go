@@ -114,6 +114,15 @@ func main() {
 		log.Exitf("Unable to get cluster peer_ipv6: %v", err)
 	}
 
+	useVMAC := config.DefaultEngineConfig().UseVMAC
+	if cfg.HasOption("cluster", "use_vmac") {
+		uv, err := cfg.GetBool("cluster", "use_vmac")
+		if err != nil {
+			log.Exitf("Unable to get use_vmac: %v", err)
+		}
+		useVMAC = uv
+	}
+
 	// The default VRID may be overridden via the config file.
 	vrid := config.DefaultEngineConfig().VRID
 	if cfg.HasOption("cluster", "vrid") {
@@ -191,6 +200,7 @@ func main() {
 	engineCfg.ServiceAnycastIPv6 = serviceAnycastIPv6
 	engineCfg.SocketPath = *socketPath
 	engineCfg.VRID = vrid
+	engineCfg.UseVMAC = useVMAC
 
 	// removes previous leftover socket.
 	if err := server.RemoveUnixSocket(engineCfg.SocketPath); err != nil {

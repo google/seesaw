@@ -58,12 +58,14 @@ func (ncc *SeesawNCC) LBInterfaceInit(iface *ncctypes.LBInterface, out *int) err
 
 	log.Infof("Initialising load balancing interface %s - VRID %d (VMAC %s)", iface.Name, iface.VRID, vmac)
 
-	// Ensure interface is down and set VMAC address.
+	// Ensure interface is down.
 	if err := ifaceFastDown(netIface); err != nil {
 		return fmt.Errorf("Failed to down interface: %v", err)
 	}
-	if err := ifaceSetMAC(netIface); err != nil {
-		return fmt.Errorf("Failed to set MAC: %v", err)
+	if iface.UseVMAC {
+		if err := ifaceSetMAC(netIface); err != nil {
+			return fmt.Errorf("Failed to set MAC: %v", err)
+		}
 	}
 
 	// Remove VLAN interfaces associated with the load balancing interface.

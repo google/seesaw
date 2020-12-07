@@ -50,6 +50,7 @@ var defaultEngineConfig = EngineConfig{
 	SocketPath:              seesaw.EngineSocket,
 	StatsInterval:           15 * time.Second,
 	SyncPort:                10258,
+	UseVMAC:                 true,
 	VRID:                    60,
 	VRRPDestIP:              net.ParseIP("224.0.0.18"),
 }
@@ -87,6 +88,7 @@ type EngineConfig struct {
 	SocketPath              string        // The path to the engine socket.
 	StatsInterval           time.Duration // The statistics update interval.
 	SyncPort                int           // The port for sync'ing with this node's peer.
+	UseVMAC                 bool          // Use VRRP MAC. If not, ClusterVIP is optional and Seesaw uses gratuitous arp/unsolicited na for failover.
 	VMAC                    string        // The VMAC address to use for the load balancing network interface.
 	VRID                    uint8         // The VRRP virtual router ID for the cluster.
 	VRRPDestIP              net.IP        // The destination IP for VRRP advertisements.
