@@ -27,8 +27,6 @@ import (
 	"syscall"
 	"unsafe"
 
-	ncctypes "github.com/google/seesaw/ncc/types"
-
 	log "github.com/golang/glog"
 )
 
@@ -151,15 +149,25 @@ func sendARP(iface *net.Interface, m *arpMessage) error {
 }
 
 // ARPSendGratuitous sends a gratuitous ARP message via the specified interface.
-func (ncc *SeesawNCC) ARPSendGratuitous(arp *ncctypes.ARPGratuitous, out *int) error {
-	iface, err := net.InterfaceByName(arp.IfaceName)
-	if err != nil {
-		return fmt.Errorf("failed to get interface %q: %v", arp.IfaceName, err)
+func (ncc *SeesawNCC) ARPSendGratuitous(arpMap map[string][]net.IP, out *int) error {
+	for ifName, ips := range arpMap {
+		iface, err := net.InterfaceByName(ifName)
+		if err != nil {
+			log.Errorf("failed to get interface %q: %v", ifName, err)
+			continue
+		}
+		for _, ip := range ips {
+			log.V(2).Infof("Sending gratuitous ARP for %s (%s) via %s", ip, iface.HardwareAddr, iface.Name)
+			m, err := gratuitousARPReply(ip, iface.HardwareAddr)
+			if err != nil {
+				log.Errorf("failed to build gratuitous arp: %v", err)
+				continue
+			}
+			if err := sendARP(iface, m); err != nil {
+				log.Errorf("failed to send gratuitous arp: %v", err)
+				continue
+			}
+		}
 	}
-	log.V(2).Infof("Sending gratuitous ARP for %s (%s) via %s", arp.IP, iface.HardwareAddr, iface.Name)
-	m, err := gratuitousARPReply(arp.IP, iface.HardwareAddr)
-	if err != nil {
-		return err
-	}
-	return sendARP(iface, m)
+	return nil
 }

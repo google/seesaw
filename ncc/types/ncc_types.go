@@ -26,12 +26,6 @@ import (
 	"github.com/google/seesaw/quagga"
 )
 
-// ARPGratuitous encapsulates a request to send a gratuitous ARP message.
-type ARPGratuitous struct {
-	IfaceName string
-	IP        net.IP
-}
-
 // BGPNeighbors encapsulates a list of BGP neighbors.
 type BGPNeighbors struct {
 	Neighbors []*quagga.Neighbor
@@ -61,6 +55,7 @@ type LBConfig struct {
 	Node           seesaw.Host
 	RoutingTableID uint8
 	VRID           uint8
+	UseVMAC        bool
 }
 
 // LBInterface represents the load balancing network interface on a Seesaw Node.

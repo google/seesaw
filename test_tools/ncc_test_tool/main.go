@@ -69,7 +69,9 @@ func arpTests(ncc client.NCC) {
 		log.Fatalf("Invalid cluster VIP - %q", *clusterVIPStr)
 	}
 	log.Print("Sending gratuitous ARP...")
-	if err := ncc.ARPSendGratuitous(*testIface, vip); err != nil {
+	if err := ncc.ARPSendGratuitous(map[string][]net.IP{
+		*testIface: []net.IP{vip},
+	}); err != nil {
 		log.Fatalf("Failed to send gratuitous ARP: %v", err)
 	}
 	log.Print("Done.")
