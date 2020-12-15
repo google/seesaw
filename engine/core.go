@@ -83,6 +83,11 @@ type Engine struct {
 	vserverSnapshots map[string]*seesaw.Vserver
 	vserverLock      sync.RWMutex
 	vserverChan      chan *seesaw.Vserver
+
+	startTime time.Time
+
+	arpMap  map[string][]net.IP // iface name -> IP list
+	arpLock sync.Mutex
 }
 
 func newEngineWithNCC(cfg *config.EngineConfig, ncc ncclient.NCC) *Engine {
@@ -286,6 +291,7 @@ func (e *Engine) initNetwork() {
 		Node:           e.config.Node,
 		RoutingTableID: e.config.RoutingTableID,
 		VRID:           e.config.VRID,
+		UseVMAC:        e.config.UseVMAC,
 	}
 	e.lbInterface = e.ncc.NewLBInterface(e.config.LBInterface, lbCfg)
 
@@ -332,17 +338,19 @@ func (e *Engine) gratuitousARP() {
 		case <-arpTicker.C:
 			if e.haManager.state() != spb.HaState_LEADER {
 				if announced {
-					log.Infof("Stopping gratuitous ARPs for %s", e.config.ClusterVIP.IPv4Addr)
+					log.Info("Stopping gratuitous ARPs")
 					announced = false
 				}
 				continue
 			}
 			if !announced {
-				log.Infof("Starting gratuitous ARPs for %s via %s every %s",
-					e.config.ClusterVIP.IPv4Addr, e.config.LBInterface, e.config.GratuitousARPInterval)
+				log.Infof("Starting gratuitous ARPs every %s", e.config.GratuitousARPInterval)
 				announced = true
 			}
-			if err := e.ncc.ARPSendGratuitous(e.config.LBInterface, e.config.ClusterVIP.IPv4Addr); err != nil {
+			e.arpLock.Lock()
+			arpMap := e.arpMap
+			e.arpLock.Unlock()
+			if err := e.ncc.ARPSendGratuitous(arpMap); err != nil {
 				log.Fatalf("Failed to send gratuitous ARP: %v", err)
 			}
 
@@ -423,6 +431,8 @@ func (e *Engine) manager() {
 
 			// TODO(jsing): Ensure this does not block.
 			e.updateVservers()
+
+			e.updateARPMap()
 
 		case <-e.haManager.timer():
 			log.Infof("Timed out waiting for HAState")
@@ -506,6 +516,59 @@ func (e *Engine) updateVservers() {
 	}
 	for _, config := range cluster.Vservers {
 		e.vservers[config.Name].updateConfig(config)
+	}
+}
+
+// updateARPMap goes through the new config and updates the internal ARP map so that
+// the gratutious arp loop adopts to new changes.
+func (e *Engine) updateARPMap() {
+	arpMap := make(map[string][]net.IP)
+	defer func() {
+		e.arpLock.Lock()
+		defer e.arpLock.Unlock()
+		e.arpMap = arpMap
+	}()
+
+	arpMap[e.config.LBInterface] = []net.IP{e.config.ClusterVIP.IPv4Addr}
+	if e.config.UseVMAC {
+		// If using VMAC, only announce ClusterVIP is enough.
+		return
+	}
+
+	e.clusterLock.RLock()
+	cluster := e.cluster
+	e.clusterLock.RUnlock()
+
+	e.vlanLock.RLock()
+	defer e.vlanLock.RUnlock()
+	for _, vserver := range cluster.Vservers {
+		for _, vip := range vserver.VIPs {
+			if vip.Type == seesaw.AnycastVIP {
+				continue
+			}
+			ip := vip.IP.IP()
+			if ip.To4() == nil {
+				// IPv6 address is not yet supported.
+				continue
+			}
+			found := false
+			for _, vlan := range e.vlans {
+				ipNet := vlan.IPv4Net()
+				if ipNet == nil {
+					continue
+				}
+				if ipNet.Contains(ip) {
+					ifName := fmt.Sprintf("%s.%d", e.config.LBInterface, vlan.ID)
+					arpMap[ifName] = append(arpMap[ifName], ip)
+					found = true
+					break
+				}
+			}
+			if !found {
+				// Use LB interface if no vlan matches
+				arpMap[e.config.LBInterface] = append(arpMap[e.config.LBInterface], ip)
+			}
+		}
 	}
 }
 

@@ -46,7 +46,7 @@ type NCC interface {
 	Close() error
 
 	// ARPSendGratuitous sends a gratuitious ARP message.
-	ARPSendGratuitous(iface string, ip net.IP) error
+	ARPSendGratuitous(map[string][]net.IP) error
 
 	// BGPConfig returns the configuration for the Quagga BGP daemon.
 	BGPConfig() ([]string, error)
@@ -196,12 +196,8 @@ func (nc *nccClient) Close() error {
 	return nil
 }
 
-func (nc *nccClient) ARPSendGratuitous(iface string, ip net.IP) error {
-	arp := ncctypes.ARPGratuitous{
-		IfaceName: iface,
-		IP:        ip,
-	}
-	return nc.call("SeesawNCC.ARPSendGratuitous", &arp, nil)
+func (nc *nccClient) ARPSendGratuitous(arpMap map[string][]net.IP) error {
+	return nc.call("SeesawNCC.ARPSendGratuitous", arpMap, nil)
 }
 
 func (nc *nccClient) BGPConfig() ([]string, error) {

@@ -43,7 +43,7 @@ func (nc *dummyNCC) NewLBInterface(name string, cfg *ncctypes.LBConfig) LBInterf
 }
 func (nc *dummyNCC) Dial() error                                                          { return nil }
 func (nc *dummyNCC) Close() error                                                         { return nil }
-func (nc *dummyNCC) ARPSendGratuitous(iface string, ip net.IP) error                      { return nil }
+func (nc *dummyNCC) ARPSendGratuitous(arpMap map[string][]net.IP) error                   { return nil }
 func (nc *dummyNCC) BGPConfig() ([]string, error)                                         { return nil, nil }
 func (nc *dummyNCC) BGPNeighbors() ([]*quagga.Neighbor, error)                            { return nil, nil }
 func (nc *dummyNCC) BGPWithdrawAll() error                                                { return nil }
