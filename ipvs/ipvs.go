@@ -218,9 +218,13 @@ func (f *ServiceFlags) SetBytes(x []byte) {
 }
 
 const (
-	SFPersistent ServiceFlags = ipvsSvcFlagPersist
-	SFHashed     ServiceFlags = ipvsSvcFlagHashed
-	SFOnePacket  ServiceFlags = ipvsSvcFlagOnePacket
+	SFPersistent      ServiceFlags = ipvsSvcFlagPersist
+	SFHashed          ServiceFlags = ipvsSvcFlagHashed
+	SFOnePacket       ServiceFlags = ipvsSvcFlagOnePacket
+	SFSchedSHFallback ServiceFlags = ipvsSvcFlagSchedSHFallback
+	SFSchedSHPort     ServiceFlags = ipvsSvcFlagSchedSHPort
+	SFSchedMHFallback ServiceFlags = ipvsSvcFlagSchedMHFallback
+	SFSchedMHPort     ServiceFlags = ipvsSvcFlagSchedMHPort
 )
 
 // Service represents an IPVS service.
@@ -333,6 +337,14 @@ const (
 	ipvsSvcFlagPersist   = 0x1
 	ipvsSvcFlagHashed    = 0x2
 	ipvsSvcFlagOnePacket = 0x4
+	ipvsSvcFlagSchedOpt1 = 0x8
+	ipvsSvcFlagSchedOpt2 = 0x10
+
+	// Depending on schedulers, the bit stands for different options.
+	ipvsSvcFlagSchedSHFallback = ipvsSvcFlagSchedOpt1
+	ipvsSvcFlagSchedSHPort     = ipvsSvcFlagSchedOpt2
+	ipvsSvcFlagSchedMHFallback = ipvsSvcFlagSchedOpt1
+	ipvsSvcFlagSchedMHPort     = ipvsSvcFlagSchedOpt2
 
 	ipvsDstFlagFwdMask   = 0x7
 	ipvsDstFlagFwdMasq   = 0x0

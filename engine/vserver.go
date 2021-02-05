@@ -116,6 +116,14 @@ func (s *service) ipvsService() *ipvs.Service {
 	if s.ventry.OnePacket {
 		flags |= ipvs.SFOnePacket
 	}
+	// Enables fallback and port for hashing schedulers.
+	// Maps to ipvs sh-fallback, sh-port, mh-fallback and mh-port.
+	switch s.ventry.Scheduler {
+	case seesaw.LBSchedulerSH:
+		flags |= ipvs.SFSchedSHFallback | ipvs.SFSchedSHPort
+	case seesaw.LBSchedulerMH:
+		flags |= ipvs.SFSchedMHFallback | ipvs.SFSchedMHPort
+	}
 	var ip net.IP
 	switch {
 	case s.fwm > 0 && s.af == seesaw.IPv4:
