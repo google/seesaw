@@ -236,7 +236,7 @@ func (b *BGP) Withdraw(n *net.IPNet) error {
 var (
 	neighborRE        = regexp.MustCompile(`^BGP neighbor is ([a-f0-9.:]+), remote AS (\d+), local AS (\d+),.*$`)
 	neighborDescRE    = regexp.MustCompile(`^ Description: (.*)$`)
-	neighborStateRE   = regexp.MustCompile(`^  BGP state = (\w+)(, up for ([0-9wdhm:]+))?$`)
+	neighborStateRE   = regexp.MustCompile(`^  BGP state = (\w+)(, up for ([0-9ywdhm:]+))?$`)
 	neighborStatsRE   = regexp.MustCompile(`^    (\w+): +(\d+) +(\d+)$`)
 	neighborVersionRE = regexp.MustCompile(`^  BGP version (\d), remote router ID ([a-f0-9.:]+)`)
 )
