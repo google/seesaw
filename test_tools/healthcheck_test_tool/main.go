@@ -18,7 +18,9 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -42,6 +44,7 @@ var (
 	response     = flag.String("response", "", "expected HTTP(S) response")
 	responseCode = flag.Int("response_code", 200, "expected HTTP(S) response code")
 	tlsVerify    = flag.Bool("tls_verify", true, "enable TLS verification for HTTPS and TCP TLS")
+	parallel     = flag.Int("parallel", 1, "concurrent goroutines")
 
 	dnsAnswer    = flag.String("answer", "", "DNS answer expected from query")
 	dnsQuery     = flag.String("query", "", "DNS query to perform")
@@ -54,13 +57,15 @@ var (
 	timeout        = flag.Duration("timeout", 0, "healthcheck timeout")
 )
 
-func check(hc healthcheck.Checker) {
+func check(hc healthcheck.Checker) error {
 	r := hc.Check(*timeout)
 	s := "success"
 	if !r.Success {
 		s = "failure"
+		return fmt.Errorf("%v - %v (healthcheck %s)", hc, r, s)
 	}
 	log.Printf("%v - %v (healthcheck %s)", hc, r, s)
+	return nil
 }
 
 func unquote(s string) string {
@@ -74,7 +79,7 @@ func unquote(s string) string {
 	return us
 }
 
-func doDNSCheck(target net.IP) {
+func doDNSCheck(target net.IP) error {
 	qt, err := healthcheck.DNSType(*dnsQueryType)
 	if err != nil {
 		log.Fatal(err)
@@ -84,10 +89,10 @@ func doDNSCheck(target net.IP) {
 	hc.Answer = *dnsAnswer
 	hc.Question.Name = *dnsQuery
 	hc.Question.Qtype = qt
-	check(hc)
+	return check(hc)
 }
 
-func doHTTPCheck(target net.IP, secure bool) {
+func doHTTPCheck(target net.IP, secure bool) error {
 	hc := healthcheck.NewHTTPChecker(target, *port)
 	hc.Mark = *mark
 	hc.Secure = secure
@@ -97,10 +102,10 @@ func doHTTPCheck(target net.IP, secure bool) {
 	hc.Method = *method
 	hc.Proxy = *proxy
 	hc.TLSVerify = *tlsVerify
-	check(hc)
+	return check(hc)
 }
 
-func doPingCheck(target net.IP) {
+func doPingCheck(target net.IP) error {
 	pc := healthcheck.NewPingChecker(target)
 	pc.Mark = *mark
 	received := 0
@@ -113,35 +118,40 @@ func doPingCheck(target net.IP) {
 		received++
 		log.Printf("Received reply from %v in %v", target, r.Duration)
 	}
-	log.Printf("Sent %d packets, received %d replies", *count, received)
+	msg := fmt.Sprintf("Sent %d packets, received %d replies", *count, received)
+	if *count != received {
+		return errors.New(msg)
+	}
+	log.Print(msg)
+	return nil
 }
 
-func doRADIUSCheck(target net.IP) {
+func doRADIUSCheck(target net.IP) error {
 	hc := healthcheck.NewRADIUSChecker(target, *port)
 	hc.Mark = *mark
 	hc.Username = *radiusUser
 	hc.Password = *radiusPasswd
 	hc.Response = *radiusResponse
 	hc.Secret = *radiusSecret
-	check(hc)
+	return check(hc)
 }
 
-func doTCPCheck(target net.IP, secure bool) {
+func doTCPCheck(target net.IP, secure bool) error {
 	hc := healthcheck.NewTCPChecker(target, *port)
 	hc.Mark = *mark
 	hc.Receive = unquote(*receive)
 	hc.Send = unquote(*send)
 	hc.Secure = secure
 	hc.TLSVerify = *tlsVerify
-	check(hc)
+	return check(hc)
 }
 
-func doUDPCheck(target net.IP) {
+func doUDPCheck(target net.IP) error {
 	hc := healthcheck.NewUDPChecker(target, *port)
 	hc.Mark = *mark
 	hc.Receive = unquote(*receive)
 	hc.Send = unquote(*send)
-	check(hc)
+	return check(hc)
 }
 
 func main() {
@@ -150,25 +160,46 @@ func main() {
 	if target == nil {
 		log.Fatalf("Invalid IP address: %v", *ip)
 	}
-
-	switch *hcType {
-	case "dns":
-		doDNSCheck(target)
-	case "http":
-		doHTTPCheck(target, false)
-	case "https":
-		doHTTPCheck(target, true)
-	case "ping":
-		doPingCheck(target)
-	case "radius":
-		doRADIUSCheck(target)
-	case "tcp":
-		doTCPCheck(target, false)
-	case "tcp_tls":
-		doTCPCheck(target, true)
-	case "udp":
-		doUDPCheck(target)
-	default:
-		log.Fatalf("Unsupported healthcheck type: %q", *hcType)
+	if *parallel < 1 {
+		log.Fatalf("Invalid value for parallel: %v", *parallel)
 	}
+
+	errs := make(chan error, *parallel)
+
+	for i := 0; i < *parallel; i++ {
+		go func(err chan error) {
+			switch *hcType {
+			case "dns":
+				err <- doDNSCheck(target)
+			case "http":
+				err <- doHTTPCheck(target, false)
+			case "https":
+				err <- doHTTPCheck(target, true)
+			case "ping":
+				err <- doPingCheck(target)
+			case "radius":
+				err <- doRADIUSCheck(target)
+			case "tcp":
+				err <- doTCPCheck(target, false)
+			case "tcp_tls":
+				err <- doTCPCheck(target, true)
+			case "udp":
+				err <- doUDPCheck(target)
+			default:
+				log.Fatalf("Unsupported healthcheck type: %q", *hcType)
+			}
+		}(errs)
+	}
+	fail := 0
+	for i := 0; i < *parallel; i++ {
+		select {
+		case err := <-errs:
+			if err != nil {
+				log.Printf("Error message: %v", err)
+				fail++
+			}
+		}
+	}
+	log.Printf("Test done. %d goroutines. success: %d, fail: %d", *parallel, *parallel-fail, fail)
+	return
 }
