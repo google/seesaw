@@ -62,7 +62,7 @@ vserver: <
   backend: <
     host: <
       fqdn: "radius1-2.example.com."
-      ipv4: "192.168.11.1/24"
+      ipv4: "192.168.11.2/24"
       status: PRODUCTION
     >
     weight: 1
