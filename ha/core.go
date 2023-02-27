@@ -23,9 +23,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/google/seesaw/common/seesaw"
 	spb "github.com/google/seesaw/pb/seesaw"
-	"gopkg.in/fsnotify.v1"
 
 	log "github.com/golang/glog"
 )
