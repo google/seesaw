@@ -16,5 +16,5 @@ require (
 require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	golang.org/x/net v0.0.0-20190923162816-aa69164e4478 // indirect
-	golang.org/x/sys v0.0.0-20191005200804-aed5e4c7ecf9 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 )
