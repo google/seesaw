@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-18.04]
-        go: [1.17, 1.18]
+        go: [1.13, 1.12]
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-go@v2
@@ -17,7 +17,7 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get install libnl-3-dev libnl-genl-3-dev
-        PROTOC_VER=3.21.12
+        PROTOC_VER=3.7.1
         PROTOC_ZIP=protoc-${PROTOC_VER}-linux-x86_64.zip
         curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/${PROTOC_ZIP}
         sudo unzip ${PROTOC_ZIP} -d /usr/local
