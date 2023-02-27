@@ -41,7 +41,7 @@ by running:
     apt-get install golang
     apt-get install libnl-3-dev libnl-genl-3-dev
 
-If your distro has a go version before 1.5, you may need to fetch a newer
+If your distro has a go version before 1.17, you may need to fetch a newer
 release from https://golang.org/dl/.
 
 If you are running go version 1.11 and above, you can use go modules to avoid
