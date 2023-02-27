@@ -41,15 +41,11 @@ by running:
     apt-get install golang
     apt-get install libnl-3-dev libnl-genl-3-dev
 
-If your distro has a go version before 1.17, you may need to fetch a newer
+If your distro has a go version before 1.18, you may need to fetch a newer
 release from https://golang.org/dl/.
 
-If you are running go version 1.11 and above, you can use go modules to avoid
-installing go packages manually. By go 1.12, `GO111MODULE` defaults to `auto`,
-so remember to enable go module by `export GO111MODULE=on`.
-
-If you are running before go version 1.11 or you don't want to enable
-GO111MODULE, after setting `GOPATH` to an appropriate location (for example `~/go`):
+If you are running before go version 1.11 or you want to set `GO111MODULE=off`,
+after setting `GOPATH` to an appropriate location (for example `~/go`):
 
     go get -u golang.org/x/crypto/ssh
     go get -u github.com/dlintw/goconf
