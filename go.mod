@@ -1,15 +1,22 @@
 module github.com/google/seesaw
 
-go 1.12
+go 1.17
 
 require (
 	github.com/dlintw/goconf v0.0.0-20120228082610-dcc070983490
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/protobuf v1.4.0
+	github.com/fsnotify/fsnotify v1.6.0
+	github.com/golang/glog v1.0.0
+	github.com/golang/protobuf v1.5.2
 	github.com/kylelemons/godebug v1.1.0
-	github.com/miekg/dns v1.1.27
-	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876
-	google.golang.org/protobuf v1.23.0
-	gopkg.in/fsnotify.v1 v1.4.7
+	github.com/miekg/dns v1.1.51
+	golang.org/x/crypto v0.6.0
+	google.golang.org/protobuf v1.28.1
+)
+
+require (
+	golang.org/x/mod v0.7.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/tools v0.3.0 // indirect
 )
