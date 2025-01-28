@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/dlintw/goconf v0.0.0-20120228082610-dcc070983490
 	github.com/fsnotify/fsnotify v1.6.0
-	github.com/golang/glog v1.0.0
+	github.com/golang/glog v1.2.4
 	github.com/golang/protobuf v1.5.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/miekg/dns v1.1.51
