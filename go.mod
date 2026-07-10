@@ -9,7 +9,7 @@ require (
 	github.com/golang/protobuf v1.5.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/miekg/dns v1.1.51
-	golang.org/x/crypto v0.51.0
+	golang.org/x/crypto v0.52.0
 	google.golang.org/protobuf v1.33.0
 )
 
