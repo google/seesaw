@@ -45,7 +45,7 @@ type NCC interface {
 	// Close closes the connection to the Seesaw NCC.
 	Close() error
 
-	// ARPSendGratuitous sends a gratuitious ARP message.
+	// ARPSendGratuitous sends a gratuitous ARP message.
 	ARPSendGratuitous(map[string][]net.IP) error
 
 	// BGPConfig returns the configuration for the Quagga BGP daemon.
