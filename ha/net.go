@@ -110,7 +110,7 @@ func IPConn(localAddr, remoteAddr net.IP) (*net.IPConn, error) {
 		// Request that the ancillary data for received packets include the hop limit and the
 		// destination address.
 
-		// TODO(angusc): syscall.IPV6_RECVHOPLIMIT and syscall.IPV6_RECVPKTINFO are prefered but they
+		// TODO(angusc): syscall.IPV6_RECVHOPLIMIT and syscall.IPV6_RECVPKTINFO are preferred but they
 		// don't work on lucid.
 		if err := setsockopt(f, syscall.IPPROTO_IPV6, syscall.IPV6_2292HOPLIMIT, 1); err != nil {
 			return nil, err

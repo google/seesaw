@@ -283,7 +283,7 @@ func (n *Node) becomeShutdown() {
 
 	if n.state() == spb.HaState_LEADER {
 		n.stopSenderChannel <- spb.HaState_SHUTDOWN
-		// Sleep for a moment so sendAdvertisements() has a chance to send the shutdown advertisment.
+		// Sleep for a moment so sendAdvertisements() has a chance to send the shutdown advertisement.
 		time.Sleep(500 * time.Millisecond)
 	}
 	n.setState(spb.HaState_SHUTDOWN)
@@ -379,7 +379,7 @@ func (n *Node) queueAdvertisement(advert *advertisement) {
 func (n *Node) sendAdvertisements() {
 	ticker := time.NewTicker(n.MasterAdvertInterval)
 	for {
-		// TODO(angusc): figure out how to make the timing-related logic here, and thoughout, clockjump
+		// TODO(angusc): figure out how to make the timing-related logic here, and throughout, clockjump
 		// safe.
 		select {
 		case <-ticker.C:

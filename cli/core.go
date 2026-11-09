@@ -137,7 +137,7 @@ func FindCommand(cmdline string) (*Command, *[]Command, []*Command, []string) {
 			// Sub command not found.
 			return nil, nil, chain, cmdstr[idx:]
 		} else if len(matches) > 1 {
-			// Ambiguious command.
+			// Ambiguous command.
 			return nil, &matches, chain, cmdstr[idx:]
 		}
 		chain = append(chain, next)

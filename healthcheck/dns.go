@@ -175,11 +175,11 @@ func (hc *DNSChecker) Check(timeout time.Duration) *Result {
 				return complete(start, msg, true, err)
 			}
 		case *dns.CNAME:
-			// TODO(jsing): Implement comparision.
+			// TODO(jsing): Implement comparison.
 		case *dns.NS:
-			// TODO(jsing): Implement comparision.
+			// TODO(jsing): Implement comparison.
 		case *dns.SOA:
-			// TODO(jsing): Implement comparision.
+			// TODO(jsing): Implement comparison.
 		}
 	}
 
