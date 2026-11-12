@@ -137,7 +137,7 @@ func lbInterface(ncc client.NCC) client.LBInterface {
 		log.Fatalf("Invalid cluster VIP - %q", *clusterVIPStr)
 	}
 	if *vrID < 1 || *vrID > 255 {
-		log.Fatalf("Invalid VRID - %q", *vrID)
+		log.Fatalf("Invalid VRID - %v", *vrID)
 	}
 	rtID := uint8(*routingTableID)
 	// TODO(jsing): Change this to allow both IPv4 and IPv6 addresses.
