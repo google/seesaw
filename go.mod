@@ -1,6 +1,6 @@
 module github.com/google/seesaw
 
-go 1.25.0
+go 1.27.3
 
 require (
 	github.com/dlintw/goconf v0.0.0-20120228082610-dcc070983490
@@ -10,7 +10,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/miekg/dns v1.1.51
 	golang.org/x/crypto v0.52.0
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.36.12
 )
 
 require (

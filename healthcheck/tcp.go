@@ -86,6 +86,11 @@ func (hc *TCPChecker) Check(timeout time.Duration) *Result {
 	conn := net.Conn(tcpConn)
 	defer conn.Close()
 
+	if err := conn.SetDeadline(deadline); err != nil {
+		msg := fmt.Sprintf("%s; failed to set deadline", msg)
+		return complete(start, msg, false, err)
+	}
+
 	// Negotiate TLS if this is required.
 	if hc.Secure {
 		// TODO(jsing): We probably should allow the server name to
@@ -108,12 +113,6 @@ func (hc *TCPChecker) Check(timeout time.Duration) *Result {
 
 	if hc.Send == "" && hc.Receive == "" {
 		return complete(start, msg, true, err)
-	}
-
-	err = conn.SetDeadline(deadline)
-	if err != nil {
-		msg = fmt.Sprintf("%s; failed to set deadline", msg)
-		return complete(start, msg, false, err)
 	}
 
 	if hc.Send != "" {

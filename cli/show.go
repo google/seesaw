@@ -569,7 +569,10 @@ func printHdr(h string, args ...interface{}) {
 // printFmt formats and prints a given value with the specified label.
 func printFmt(l, v string, args ...interface{}) {
 	l = label(l, subIndent, valIndent)
-	fmt.Printf("%s %s\n", l, fmt.Sprintf(v, args...))
+	if len(args) > 0 {
+		v = fmt.Sprintf(v, args...)
+	}
+	fmt.Printf("%s %s\n", l, v)
 }
 
 // printVal prints the given value with the specified label.

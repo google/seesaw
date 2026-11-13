@@ -134,7 +134,7 @@ func (c *Cluster) AddVserver(vserver *Vserver) error {
 func (c *Cluster) AddVLAN(vlan *seesaw.VLAN) error {
 	key := vlan.Key()
 	if _, ok := c.VLANs[key]; ok {
-		return fmt.Errorf("Cluster %q already contains VLAN %q", c.Site, key)
+		return fmt.Errorf("Cluster %q already contains VLAN %v", c.Site, key)
 	}
 	c.VLANs[key] = vlan
 	return nil

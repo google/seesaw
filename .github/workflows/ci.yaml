@@ -1,23 +1,28 @@
 name: Build and Test
 
 on: [push, pull_request]
+permissions: {}
 
 jobs:
   build:
+    permissions:
+      contents: read
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04]
-        go: [1.19, 1.18]
+        os: [ubuntu-24.04]
+        go: [1.27]
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
       with:
         go-version: ${{ matrix.go }}
     - name: Install Dependencies
       run: |
         sudo apt-get install libnl-3-dev libnl-genl-3-dev
-        PROTOC_VER=3.7.1
+        PROTOC_VER=36.2
         PROTOC_ZIP=protoc-${PROTOC_VER}-linux-x86_64.zip
         curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/${PROTOC_ZIP}
         sudo unzip ${PROTOC_ZIP} -d /usr/local

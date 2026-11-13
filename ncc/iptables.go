@@ -22,6 +22,7 @@ package ncc
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net"
 	"os/exec"
@@ -52,7 +53,7 @@ const (
 	ipt6Cmd = "/sbin/ip6tables"
 
 	iptAppend iptAction = "-A"
-	iptCheck iptAction  = "-C"
+	iptCheck  iptAction = "-C"
 	iptDelete iptAction = "-D"
 	iptInsert iptAction = "-I"
 
@@ -201,7 +202,7 @@ func iptablesRunOutput(af seesaw.AF, argsStr string) (string, error) {
 	if err != nil {
 		msg := fmt.Sprintf("iptablesRunOutput: '%s %s': %v", cmd, argsStr, err)
 		log.Infof(msg)
-		return "", fmt.Errorf(msg)
+		return "", errors.New(msg)
 	}
 	return string(out), nil
 }
