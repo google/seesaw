@@ -87,6 +87,7 @@ type EngineConfig struct {
 	ServiceAnycastIPv6      []net.IP      // IPv6 anycast addresses that are always advertised.
 	SocketPath              string        // The path to the engine socket.
 	StatsInterval           time.Duration // The statistics update interval.
+	SyncKey                 string        // The shared secret key for authenticating peer sync messages.
 	SyncPort                int           // The port for sync'ing with this node's peer.
 	UseVMAC                 bool          // Use VRRP MAC. If false, Seesaw uses gratuitous arp for failover (ipv6 not supported yet). Default true.
 	VMAC                    string        // The VMAC address to use for the load balancing network interface.
