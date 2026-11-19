@@ -22,6 +22,8 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	"github.com/google/seesaw/common/seesaw"
 )
 
 func newLocalTCPListener() (*net.TCPListener, *net.TCPAddr, error) {
@@ -243,5 +245,111 @@ noteLoop:
 	}
 	if received[SNTHeartbeat] != 1 {
 		t.Errorf("While waiting for desync, received: %v; expected 1 Heartbeat", received)
+	}
+}
+
+func TestSyncOverrideAuthentication(t *testing.T) {
+	ln, client, server, _, err := newSyncTest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+
+	client.dispatch = client.handleNote
+	client.engine.overrideChan = make(chan seesaw.Override, 8)
+	go client.runOnce()
+	defer func() {
+		client.quit <- true
+		<-client.stopped
+	}()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		server.sessionLock.RLock()
+		n := len(server.sessions)
+		server.sessionLock.RUnlock()
+		if n > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("Timed out waiting for sync session registration")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// Unauthenticated.
+	server.notify(&SyncNote{
+		Type: SNTOverride,
+		VserverOverride: &seesaw.VserverOverride{
+			VserverName:   "unauthenticated",
+			OverrideState: seesaw.OverrideDisable,
+		},
+	})
+	select {
+	case got := <-client.engine.overrideChan:
+		vo, ok := got.(*seesaw.VserverOverride)
+		if !ok {
+			t.Fatalf("overrideChan delivered %T, want *seesaw.VserverOverride", got)
+		}
+		if vo.Target() != "unauthenticated" || vo.State() != seesaw.OverrideDisable {
+			t.Errorf("got override (%q, %v), want (%q, %v)", vo.Target(), vo.State(), "authenticated", seesaw.OverrideDisable)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Timed out waiting for unauthenticated override")
+	}
+
+	// Reject wrong key.
+	client.engine.config.SyncKey = "somekey"
+	note := &SyncNote{
+		Type: SNTOverride,
+		Time: time.Now(),
+		VserverOverride: &seesaw.VserverOverride{
+			VserverName:   "wrong",
+			OverrideState: seesaw.OverrideDisable,
+		},
+	}
+	note.sign([]byte("wrongkey"))
+	client.handleNote(note)
+	select {
+	case got := <-client.engine.overrideChan:
+		t.Errorf("Wrong key override was unexpectedly accepted: %v", got)
+	default:
+	}
+
+	// Expired.
+	expired := &SyncNote{
+		Type: SNTOverride,
+		Time: time.Now().Add(-2 * sessionDeadtime),
+		VserverOverride: &seesaw.VserverOverride{
+			VserverName:   "expired",
+			OverrideState: seesaw.OverrideDisable,
+		},
+	}
+	expired.sign([]byte(client.engine.config.SyncKey))
+	client.handleNote(expired)
+	select {
+	case got := <-client.engine.overrideChan:
+		t.Errorf("Expired override was unexpectedly accepted: %v", got)
+	default:
+	}
+
+	// Good.
+	server.notify(&SyncNote{
+		Type: SNTOverride,
+		VserverOverride: &seesaw.VserverOverride{
+			VserverName:   "good",
+			OverrideState: seesaw.OverrideDisable,
+		},
+	})
+	select {
+	case got := <-client.engine.overrideChan:
+		vo, ok := got.(*seesaw.VserverOverride)
+		if !ok {
+			t.Fatalf("overrideChan delivered %T, want *seesaw.VserverOverride", got)
+		}
+		if vo.Target() != "good" || vo.State() != seesaw.OverrideDisable {
+			t.Errorf("got override (%q, %v), want (%q, %v)", vo.Target(), vo.State(), "good", seesaw.OverrideDisable)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Timed out waiting for authenticated override")
 	}
 }
