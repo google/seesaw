@@ -7,6 +7,9 @@ peer_ipv4 = 192.168.10.3
 peer_ipv6 = 2015:cafe::3
 vip_ipv4 = 192.168.10.1
 vip_ipv6 = 2015:cafe::1
+# Generate a random secret, e.g., `openssl rand -hex 32`
+# Both nodes must use the same sync_key.
+# sync_key = <shared-secret>
 
 [config_server]
 primary = seesaw-config1.example.com

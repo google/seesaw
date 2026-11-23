@@ -208,6 +208,7 @@ func main() {
 	engineCfg.ServiceAnycastIPv4 = serviceAnycastIPv4
 	engineCfg.ServiceAnycastIPv6 = serviceAnycastIPv6
 	engineCfg.SocketPath = *socketPath
+	engineCfg.SyncKey = cfgOpt(cfg, "cluster", "sync_key")
 	engineCfg.VRID = vrid
 	engineCfg.UseVMAC = useVMAC
 	engineCfg.GratuitousARPInterval = garpInterval

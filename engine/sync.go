@@ -20,6 +20,8 @@ package engine
 // between Seesaw nodes.
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net"
@@ -32,8 +34,6 @@ import (
 
 	log "github.com/golang/glog"
 )
-
-// TODO(jsing): Consider implementing message authentication.
 
 const (
 	sessionDeadtime       = 2 * time.Minute
@@ -81,6 +81,7 @@ func (snt SyncNoteType) String() string {
 type SyncNote struct {
 	Type SyncNoteType
 	Time time.Time
+	MAC  []byte
 
 	Config      *config.Notification
 	Healthcheck *SyncHealthCheckNotification
@@ -88,6 +89,52 @@ type SyncNote struct {
 	BackendOverride     *seesaw.BackendOverride
 	DestinationOverride *seesaw.DestinationOverride
 	VserverOverride     *seesaw.VserverOverride
+}
+
+// macBytes returns the canonical byte representation of a SyncNote used for
+// HMAC computation.
+func (sn *SyncNote) macBytes() []byte {
+	s := fmt.Sprintf("type=%d;time=%d;", sn.Type, sn.Time.UnixNano())
+	if o := sn.BackendOverride; o != nil {
+		s += fmt.Sprintf("backend=%q:%d;", o.Hostname, o.OverrideState)
+	}
+	if o := sn.DestinationOverride; o != nil {
+		s += fmt.Sprintf("dest=%q:%q:%d;", o.VserverName, o.DestinationName, o.OverrideState)
+	}
+	if o := sn.VserverOverride; o != nil {
+		s += fmt.Sprintf("vserver=%q:%d;", o.VserverName, o.OverrideState)
+	}
+	return []byte(s)
+}
+
+// sign computes and sets the HMAC-SHA256 for the SyncNote using the given key.
+func (sn *SyncNote) sign(key []byte) {
+	if len(key) == 0 {
+		return
+	}
+	mac := hmac.New(sha256.New, key)
+	mac.Write(sn.macBytes())
+	sn.MAC = mac.Sum(nil)
+}
+
+// verify reports whether the SyncNote has a valid HMAC-SHA256 for the given
+// key and a timestamp within maxSkew of now.
+func (sn *SyncNote) verify(key []byte, now time.Time, maxSkew time.Duration) bool {
+	// NOTE: Empty keys will become an error in Feb 2027.
+	if len(key) == 0 {
+		log.Warning("No sync_key set in seesaw.cfg, accepting unsigned SyncNote. This will become an error soon.")
+		return true
+	}
+	if len(sn.MAC) == 0 || sn.Time.IsZero() {
+		return false
+	}
+	skew := now.Sub(sn.Time)
+	if skew < -maxSkew || skew > maxSkew {
+		return false
+	}
+	mac := hmac.New(sha256.New, key)
+	mac.Write(sn.macBytes())
+	return hmac.Equal(sn.MAC, mac.Sum(nil))
 }
 
 // SyncNotes specifies a collection of SyncNotes.
@@ -300,6 +347,12 @@ func (s *syncServer) serve(l *net.TCPListener) error {
 // notify queues a synchronisation notification with each of the active
 // synchronisation sessions.
 func (s *syncServer) notify(sn *SyncNote) {
+	if sn.Time.IsZero() {
+		sn.Time = time.Now()
+	}
+	if s.engine != nil && s.engine.config.SyncKey != "" {
+		sn.sign([]byte(s.engine.config.SyncKey))
+	}
 	s.sessionLock.RLock()
 	sessions := s.sessions
 	s.sessionLock.RUnlock()
@@ -516,6 +569,11 @@ func (sc *syncClient) handleHealthcheck(sn *SyncNote) {
 // handleOverride handles an override notification.
 func (sc *syncClient) handleOverride(sn *SyncNote) {
 	log.V(1).Infoln("Sync client received override notification")
+
+	if !sn.verify([]byte(sc.engine.config.SyncKey), time.Now(), sessionDeadtime) {
+		log.Warningf("Sync client ignoring unauthenticated or invalid override notification from peer")
+		return
+	}
 
 	if o := sn.VserverOverride; o != nil {
 		sc.engine.queueOverride(o)
