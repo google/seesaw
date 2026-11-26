@@ -100,7 +100,7 @@ func gratuitousARPReply(ip net.IP, mac net.HardwareAddr) (*arpMessage, error) {
 		mac,
 		ip.To4(),
 		ethernetBroadcast,
-		net.IPv4bcast,
+		ip.To4(),
 	}
 
 	return m, nil
